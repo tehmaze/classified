@@ -168,7 +168,7 @@ class PAN(Probe):
         # Ignores, if configured
         if self.config.has_option('probe:pan', 'ignore'):
             self.ignore = map(
-                lambda char: int(char, 16),
+                lambda char: chr(int(char, 16)),
                 self.config.getlist('probe:pan', 'ignore')
             )
 
