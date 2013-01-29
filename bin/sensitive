@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+
+import os
+import sys
+from sensitive.config import Config
+from sensitive.scanner import Scanner
+
+
+def run():
+    import optparse
+
+    parser = optparse.OptionParser(usage='%prog <path[ .. <path>]>')
+    parser.add_option('-c', '--config', default='sensitive.conf',
+        help='Configuration file')
+
+    option, args = parser.parse_args()
+    if not args:
+        return parser.error('need at least one path to work with')
+
+    config = Config(option.config)
+    scanner = Scanner(config)
+
+    for path in args:
+        scanner.scan(os.path.expanduser(path))
+
+
+if __name__ == '__main__':
+    sys.exit(run())

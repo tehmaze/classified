@@ -1,0 +1,22 @@
+[scanner]
+mindepth    = -1
+maxdepth    = -1
+
+[probe]
+application/octet-stream        = pcap
+application/vnd.tcpdump.pcap    = pcap
+text/*                          = ssh, pan
+
+[probe:pan]
+; Characters that are ignored
+ignore      = 0x00, 0x0a, 0x10, 0x20, 0x2d
+; Formatting if a result is found
+format      = {filename_relative}[{line:d}]: {company} {card_number_masked}
+; Limit results (0 = disabled)
+limit       = 0
+
+[probe:pcap]
+format      = {filename_relative}[{line:d}]: pcap v{version} ({linktype})
+
+[probe:ssh]
+format      = {filename_relative}[{line:d}]: {username}({uid}:{gid}) {key_info} {key_type}
