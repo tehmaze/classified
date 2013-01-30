@@ -7,17 +7,27 @@ import re
 # Project imports
 from sensitive.meta import File, Path
 from sensitive.probe import get_probe
-from sensitive.probe.all import *
+#from sensitive.probe.all import *
 
 
 class Scanner(object):
     def __init__(self, config):
         self.config = config
         
+        # Excluded file system types
+        self.mount_exclude = self.config.getlist('scanner', 'mount_exclude')
+
         # Max traversal depths
         self.mindepth = int(self.config.getdefault('scanner', 'mindepth', -1))
         self.maxdepth = int(self.config.getdefault('scanner', 'maxdepth', -1))
         
+        # Import probes
+        for option in self.config.getlist('scanner', 'probe_include'):
+            try:
+                __import__('sensitive.probe.%s' % option)
+            except ImportError:
+                raise TypeError('Invalid probe enabled: %s' % option)
+
         # Setup probes
         self.probes = {}
         for option in self.config.options('probe'):
@@ -33,9 +43,15 @@ class Scanner(object):
 
     def scan(self, path):
         for item in self.walk(path):
-            logging.debug('scanning %r' % item)
             if item.mimetype is None:
                 continue
+            elif item.mount.fs['type'] in self.mount_exclude:
+                logging.info('skipping %s: excluded fs type %s' % (item,
+                    item.mount.fs['type']))
+                continue
+            else:
+                logging.debug('scanning %r' % item)
+
             for pattern, probes in self.probes.iteritems():
                 if pattern.match(item.mimetype):
                     for probe in probes:

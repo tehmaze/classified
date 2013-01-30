@@ -1,14 +1,30 @@
+; General configuration
+; ---------------------
+; This section contains general configuration options.
+
 [scanner]
-mindepth    = -1
-maxdepth    = -1
+probe_include	= pan, pcap, ssh
+mount_exclude = binfmt_misc, devfs, devpts, fuse, nfs, proc, rpc_pipefs, sysfs, usbfs
+mindepth      = -1
+maxdepth      = -1
+
+
+; Probe definitions
+; -----------------
+; This section maps mime type globs to possible probes.
 
 [probe]
 application/octet-stream        = pcap
 application/vnd.tcpdump.pcap    = pcap
 text/*                          = ssh, pan
 
+
+; Probe configurations
+; --------------------
+; This section contains per-probe configuration options.
+
 [probe:pan]
-; Characters that are ignored
+; Characters that are ignored (in hex)
 ignore      = 0x00, 0x0a, 0x10, 0x20, 0x2d
 ; Formatting if a result is found
 format      = {filename_relative}[{line:d}]: {company} {card_number_masked}
