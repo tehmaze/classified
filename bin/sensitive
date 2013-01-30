@@ -1,7 +1,11 @@
 #!/usr/bin/env python
 
+# Python imports
+import logging
 import os
 import sys
+
+# Project imports
 from sensitive.config import Config
 from sensitive.scanner import Scanner
 
@@ -12,10 +16,15 @@ def run():
     parser = optparse.OptionParser(usage='%prog <path[ .. <path>]>')
     parser.add_option('-c', '--config', default='sensitive.conf',
         help='Configuration file')
+    parser.add_option('-v', '--verbose', action='store_true', default=False,
+        help='Be verbose (default: no)')
 
     option, args = parser.parse_args()
     if not args:
         return parser.error('need at least one path to work with')
+
+    if option.verbose:
+        logging.basicConfig(level=logging.DEBUG)
 
     config = Config(option.config)
     scanner = Scanner(config)
