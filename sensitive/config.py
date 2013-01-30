@@ -3,6 +3,9 @@ from ConfigParser import ConfigParser, NoOptionError, NoSectionError
 
 
 class Config(ConfigParser):
+    NoOptionError = NoOptionError
+    NoSectionError = NoSectionError
+    
     def __init__(self, filename, *args, **kwargs):
         ConfigParser.__init__(self, *args, **kwargs)
         self.read([filename])

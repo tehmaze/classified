@@ -3,8 +3,18 @@
 ; This section contains general configuration options.
 
 [scanner]
-probe_include	= pan, pcap, ssh
-mount_exclude = binfmt_misc, devfs, devpts, fuse, nfs, proc, rpc_pipefs, sysfs, usbfs
+; Enabled probe types
+include_probe = pan, pcap, ssh
+
+; Exclude symlinks
+exclude_link  = no
+
+; Excluded directory names
+;exclude_dirs  = .bzr, .cdv, .git, .hg, .svn
+
+; Excluded file system types
+exclude_fs    = binfmt_misc, devfs, devpts, fuse, nfs, proc, rpc_pipefs, sysfs, usbfs
+
 mindepth      = -1
 maxdepth      = -1
 
@@ -26,13 +36,17 @@ text/*                          = ssh, pan
 [probe:pan]
 ; Characters that are ignored (in hex)
 ignore      = 0x00, 0x0a, 0x10, 0x20, 0x2d
+
 ; Formatting if a result is found
 format      = {filename_relative}[{line:d}]: {company} {card_number_masked}
+
 ; Limit results (0 = disabled)
 limit       = 0
 
+
 [probe:pcap]
 format      = {filename_relative}[{line:d}]: pcap v{version} ({linktype})
+
 
 [probe:ssh]
 format      = {filename_relative}[{line:d}]: {username}({uid}:{gid}) {key_info} {key_type}
