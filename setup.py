@@ -9,10 +9,13 @@ setup(
     license      = 'MIT',
     keywords     = 'classified sensitive pan pci',
     packages     = [
-                        'classified',
-                        'classified.platform',
-                        'classified.probe',
-                    ],
+        'classified',
+        'classified.platform',
+        'classified.probe',
+    ],
+    data_files   = [
+        ('/etc/classified', 'etc/classified.conf.sample'),
+    ],
     scripts      = ['bin/classified'],
 )
 
