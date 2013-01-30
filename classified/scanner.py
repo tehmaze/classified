@@ -5,9 +5,9 @@ import os
 import re
 
 # Project imports
-from sensitive.meta import File, Path
-from sensitive.probe import get_probe
-#from sensitive.probe.all import *
+from classified.meta import File, Path
+from classified.probe import get_probe
+#from classified.probe.all import *
 
 
 class Scanner(object):
@@ -35,7 +35,7 @@ class Scanner(object):
         # Import probes
         for option in self.config.getlist('scanner', 'include_probe'):
             try:
-                __import__('sensitive.probe.%s' % option)
+                __import__('classified.probe.%s' % option)
             except ImportError:
                 raise TypeError('Invalid probe enabled: %s' % option)
 

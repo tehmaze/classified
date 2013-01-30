@@ -1,2 +1,2 @@
 test:
-	PYTHONPATH=. bin/sensitive testdata/
+	PYTHONPATH=. bin/classified testdata/

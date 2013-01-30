@@ -3,7 +3,7 @@ import os
 import struct
 
 # Project imports 
-from sensitive.probe.base import Probe
+from classified.probe.base import Probe
 
 
 class PCAP(Probe):

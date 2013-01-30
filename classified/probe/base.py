@@ -5,7 +5,7 @@ import pwd
 import stat
 
 # Project imports
-from sensitive.probe import PROBES
+from classified.probe import PROBES
 
 
 class ProbeTracker(type):

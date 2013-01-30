@@ -6,7 +6,7 @@ import os
 import re
 
 # Project imports
-from sensitive.probe.base import Probe
+from classified.probe.base import Probe
 
 
 decimal_decoder = lambda s: int(s, 10)

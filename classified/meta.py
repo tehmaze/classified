@@ -13,9 +13,9 @@ except ImportError:
 
 # Project imports (platform dependant)
 if sys.platform == 'linux2':
-    from sensitive.platform.linux import get_filesystems
+    from classified.platform.linux import get_filesystems
 elif sys.platform == 'darwin':
-    from sensitive.platform.darwin import get_filesystems  # pyflakes.ignore
+    from classified.platform.darwin import get_filesystems  # pyflakes.ignore
 else:
     raise NotImplementedError('Not compatible with platform %s' % sys.platform)
 
