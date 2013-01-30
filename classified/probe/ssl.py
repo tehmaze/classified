@@ -8,11 +8,12 @@ import stat
 from classified.probe.base import Probe
 
 
-class SSH(Probe):
+class SSL(Probe):
     format = '{filename}[{line:d}]: {key_info} {key_type} {username}'
     
     def probe(self, item):
-        with open(str(item), 'rb') as handle:
+        handle = open(str(item), 'rb')
+        try:
             key = False
             key_info = ['plaintext']
             key_type = None
@@ -60,3 +61,6 @@ class SSH(Probe):
                 key_info=' '.join(key_info),
                 key_type=key_type,
             )
+
+        finally:
+            handle.close()

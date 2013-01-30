@@ -4,7 +4,7 @@
 
 [scanner]
 ; Enabled probe types
-include_probe = pan, pcap, ssh
+include_probe = pan, pcap, ssl
 
 ; Exclude symlinks
 exclude_link  = no
@@ -26,7 +26,7 @@ maxdepth      = -1
 [probe]
 application/octet-stream        = pcap
 application/vnd.tcpdump.pcap    = pcap
-text/*                          = ssh, pan
+text/*                          = ssl, pan
 
 
 ; Probe configurations
@@ -48,5 +48,5 @@ limit       = 0
 format      = {filename_relative}[{line:d}]: pcap v{version} ({linktype})
 
 
-[probe:ssh]
+[probe:ssl]
 format      = {filename_relative}[{line:d}]: {username}({uid}:{gid}) {key_info} {key_type}
