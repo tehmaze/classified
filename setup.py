@@ -1,4 +1,16 @@
-from setuptools import setup
+from distutils.core import setup, Extension
+import sys
+
+
+ext_modules = [
+    Extension('classified._platform',
+        ['src/classified._platform.c'],
+        extra_compile_args=[
+            '-DPLATFORM_%s' % (sys.platform.upper()),
+        ]
+    )
+]
+
 
 setup(
     name         = 'classified',
@@ -17,5 +29,6 @@ setup(
         ('/etc/classified', 'etc/classified.conf.sample'),
     ],
     scripts      = ['bin/classified'],
+    ext_modules  = ext_modules,
 )
 

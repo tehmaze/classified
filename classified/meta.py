@@ -31,30 +31,7 @@ except ImportError:
     warnings.warn('Could not import optional rarfile module')
 
 # Project imports (platform dependant)
-if sys.platform == 'linux2':
-    from classified.platform.linux import get_filesystems
-elif sys.platform == 'darwin':
-    from classified.platform.darwin import get_filesystems  # pyflakes.ignore
-else:
-    raise NotImplementedError('Not compatible with platform %s' % sys.platform)
-
-
-def get_filesystem(path, filesystems=[]):
-    '''
-    Get the filesystem of a given path.
-    '''
-    path = os.path.abspath(path)
-    filesystems = filesystems or get_filesystems()
-    filesystems_match = []
-    for fs in filesystems:
-        if path.startswith(fs['mount']):
-            filesystems_match.append(fs)
-
-    # Sort by longest matching path
-    filesystems_match.sort(
-        lambda a, b: cmp(len(b['mount']), len(a['mount']))
-    )
-    return filesystems_match[0]
+from classified.platform import get_filesystem, get_filesystems
 
 
 class Path(object):
