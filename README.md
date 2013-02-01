@@ -1,7 +1,9 @@
 # Classified data scanner
 
-This is work in progress. You can use this utility to scan for classified or
-sensitive data, such as PAN information, SSL keys, pcap dumps and so on.
+Classified is a fast forensic tool that aids in scanning for sensitive data,
+such as unencrypted PAN (Primary Account Number) data, passwords, network
+traffic dumps, and so on. You can use this utility to assist in getting and
+maintaining PCI DSS compliance.
 
 ## Requirements
 
@@ -11,7 +13,7 @@ be ported to Python 3.x as well.
 Required:
 *  [Python 2.4 - 2.7](http://python.org/)
 
-## Optional requirements
+## Requirements (optional)
 
 Optionally, install:
 *  [backports.lzma](http://pypi.python.org/pypi/backports.lzma), to inspect
@@ -38,6 +40,12 @@ You can use the spec file shipped with Classified:
     $ rpmbuild -ta classified.zip
     ...
     $ sudo rpm -ivh /path/to/classified-x.y.z.arch.rpm
+
+
+## Usage
+
+The [configuration file](etc/classified.conf.example) has extensive comments
+that explains each of the configuration options.
 
 
 ## Bugs/Features
