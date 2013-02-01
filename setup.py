@@ -22,7 +22,6 @@ setup(
     keywords     = 'classified sensitive pan pci',
     packages     = [
         'classified',
-        'classified.platform',
         'classified.probe',
     ],
     data_files   = [
