@@ -121,7 +121,7 @@ static PyObject *get_filesystems(PyObject *self, PyObject *args) {
 
 
 static char module_docstring[] = \
-    "This module provides OpenBSD-specific operations.";
+    "This module provides platform specific operations.";
 static PyMethodDef module_methods[] = {
     {"get_filesystems", get_filesystems, METH_VARARGS,
         get_filesystems_docstring},
