@@ -4,7 +4,7 @@ import logging
 import re
 
 # Project imports
-from classified.meta import Path
+from classified.meta import Path, CorruptionError
 from classified.probe import get_probe
 #from classified.probe.all import *
 
@@ -57,6 +57,9 @@ class Scanner(object):
 
     def scan(self, path):
         for item in Path(path).walk():
+            if item is None:
+                continue
+
             # No readable file? Skip
             if not item.readable:
                 logging.debug('skipping %s: not readable' % item)
@@ -79,4 +82,8 @@ class Scanner(object):
             for pattern, probes in self.probes.iteritems():
                 if pattern.match(item.mimetype):
                     for probe in probes:
-                        self.probe(item, probe)
+                        try:
+                            self.probe(item, probe)
+                        except CorruptionError, e:
+                            logging.error('probe %s on %s failed: %s' % (probe,
+                                item, e))

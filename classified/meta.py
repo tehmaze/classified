@@ -1,10 +1,10 @@
 # Python imports
 import bz2
 import gzip
+import logging
 import os
 import posix
 import stat
-import sys
 import tarfile
 import time
 import zipfile
@@ -32,6 +32,10 @@ except ImportError:
 
 # Project imports (platform dependant)
 from classified.platform import get_filesystem, get_filesystems
+
+
+class CorruptionError(ValueError):
+    pass
 
 
 class Path(object):
@@ -71,10 +75,14 @@ class Path(object):
 
     def walk(self, recurse=True):
         for item in self.walk_tree():
-            yield item
-            if recurse and item.walkable:
-                for sub in item.walk():
-                    yield sub
+            if item is None:
+                continue
+
+            else:
+                yield item
+                if recurse and item.walkable:
+                    for sub in item.walk():
+                        yield sub
 
     def walk_tree(self):
         for item in os.listdir(self.path):
@@ -85,6 +93,9 @@ class Path(object):
                 yield File.maybe(full)
 
 class File(Path):
+    Corrupt = CorruptionError
+
+
     def __init__(self, path):
         super(File, self).__init__(path)
 
@@ -109,7 +120,14 @@ class File(Path):
     def maybe(path):
         instance = File(path)
         if instance.mimetype in Archive.supported_mimetypes:
-            return Archive(instance)
+            try:
+                instance = Archive(instance)
+                logging.debug('opened archive %s: %s' % (instance,
+                    instance.mimetype))
+            except CorruptionError, e:
+                logging.error('failed to inspect archive %s: %s' % (instance,
+                    e))
+                return instance
         else:
             return instance
 
@@ -125,7 +143,10 @@ class File(Path):
         return self
 
     def read(self, size=None):
-        return self.handle.read(size)
+        try:
+            return self.handle.read(size)
+        except (EOFError, IOError):
+            raise self.__class__.Corrupt(self.path)
 
     def open(self, mode='r'):
         self.handle = open(self.path, mode)
@@ -294,31 +315,49 @@ class ArchiveFile(File):
             raise IOError('Archive member not readable')
 
         if isinstance(self.archive.handle, bz2.BZ2File):
-            self.handle = bz2.BZ2File(self.archive.path, mode=mode)
-            return self.handle
+            try:
+                self.handle = bz2.BZ2File(self.archive.path, mode=mode)
+                return self.handle
+            except IOError, e:
+                raise Archive.Corrupt(self.path)
 
         elif isinstance(self.archive.handle, gzip.GzipFile):
-            self.handle = gzip.GzipFile(self.archive.path, mode=mode)
-            return self.handle
+            try:
+                self.handle = gzip.GzipFile(self.archive.path, mode=mode)
+                return self.handle
+            except IOError, e:
+                raise Archive.Corrupt(self.path)
 
         elif lzma and isinstance(self.archive.handle, lzma.LZMAFile):
-            self.handle = lzma.LZMAFile(self.archive.path, mode=mode)
-            return self.handle
+            try:
+                self.handle = lzma.LZMAFile(self.archive.path, mode=mode)
+                return self.handle
+            except lzma.LZMAError, e:
+                raise Archive.Corrupt(self.path)
 
         elif isinstance(self.archive.handle, rarfile.RarFile):
             mode = mode.replace('b', '')  # not supported in rar files
-            self.handle = self.archive.handle.open(self.filename, mode)
-            return self.handle
+            try:
+                self.handle = self.archive.handle.open(self.filename, mode)
+                return self.handle
+            except rarfile.BadRarFile:
+                raise Archive.Corrupt(self.path)
 
         elif isinstance(self.archive.handle, tarfile.TarFile):
-            self.handle = tarfile.TarFile.fileobject(self.archive.handle,
-                self.member)
-            return self.handle
+            try:
+                self.handle = tarfile.TarFile.fileobject(self.archive.handle,
+                    self.member)
+                return self.handle
+            except tarfile.TarError, e:
+                raise Archive.Corrupt(self.path)
 
         elif isinstance(self.archive.handle, zipfile.ZipFile):
-            mode = mode.replace('b', '')  # not supported in zip files
-            self.handle = self.archive.handle.open(self.filename, mode)
-            return self.handle
+            try:
+                mode = mode.replace('b', '')  # not supported in zip files
+                self.handle = self.archive.handle.open(self.filename, mode)
+                return self.handle
+            except zipfile.BadZipfile:
+                raise Archive.Corrupt(self.path)
 
         else:
             raise NotImplementedError('Archive format not supported')
