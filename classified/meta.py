@@ -19,8 +19,11 @@ except ImportError:
 try:
     import lzma
 except ImportError:
-    lzma = None
-    warnings.warn('Could not import optional lzma module')
+    try:
+        import backports.lzma as lzma
+    except ImportError:
+        lzma = None
+        warnings.warn('Could not import optional lzma module')
 try:
     import rarfile
 except ImportError:
