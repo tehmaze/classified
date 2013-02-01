@@ -1,7 +1,6 @@
 # Parts are courtesey of `Ben Hogdson <http://benhodgson.com/>`_.
 
 # Python imports
-from collections import defaultdict
 import os
 import re
 
@@ -160,9 +159,11 @@ class PAN(Probe):
         super(PAN, self).__init__(config, *args, **kwargs)
 
         # Also keep track of per prefix size checks
-        self._check_size = defaultdict(dict)
+        self._check_size = {}
         for company, checks in self._check.iteritems():
             for length in checks['length']:
+                if length not in self._check_size:
+                    self._check_size[length] = {}
                 self._check_size[length][company] = checks['prefix']
 
         # Ignores, if configured
@@ -191,38 +192,38 @@ class PAN(Probe):
         digits = []
         digits_min = min(self._check_size)
         digits_max = max(self._check_size)
-        with open(str(item), 'rb') as handle:
-            lineno = 0
-            for line in handle:
-                lineno += 1
 
-                for char in line:
-                    # If we have a digit, append it to the digits list
-                    if char.isdigit():
-                        digits.append(int(char))
+        line = 0
+        for text in item.open():
+            line += 1
 
-                    # We ignore dashes, new lines and carriage returns
-                    elif char in self.ignore:
-                        continue
+            for char in text:
+                # If we have a digit, append it to the digits list
+                if char.isdigit():
+                    digits.append(int(char))
 
-                    # Otherwise we'll reset the buffer
-                    else:
-                        digits = []
-                        continue
+                # We ignore dashes, new lines and carriage returns
+                elif char in self.ignore:
+                    continue
 
-                    if len(digits) >= digits_max:
-                        digits = digits[1:]
+                # Otherwise we'll reset the buffer
+                else:
+                    digits = []
+                    continue
 
-                    if len(digits) >= digits_min:
-                        for x in xrange(digits_min, digits_max + 1):
-                            card_number = ''.join(map(str, digits[:x]))
-                            card_company = self.check(card_number)
-                            if card_company is not None:
-                                self.report(str(item),
-                                    line=lineno,
-                                    card_number=card_number,
-                                    card_number_masked=mask(card_number),
-                                    company=card_company,
-                                )
-                                digits = digits[x:]
-                                break
+                if len(digits) >= digits_max:
+                    digits = digits[1:]
+
+                if len(digits) >= digits_min:
+                    for x in xrange(digits_min, digits_max + 1):
+                        card_number = ''.join(map(str, digits[:x]))
+                        card_company = self.check(card_number)
+                        if card_company is not None:
+                            self.report(item,
+                                line=line,
+                                card_number=card_number,
+                                card_number_masked=mask(card_number),
+                                company=card_company,
+                            )
+                            digits = digits[x:]
+                            break

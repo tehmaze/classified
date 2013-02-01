@@ -86,19 +86,19 @@ class PCAP(Probe):
     }
     
     def probe(self, item):
-        with open(str(item), 'rb') as handle:
-            chunk = handle.read(self.header_size)
-            if len(chunk) != self.header_size:
-                return
+        item.open('r')
+        chunk = item.read(self.header_size)
+        if len(chunk) != self.header_size:
+            return
+        
+        magic, version_major, version_minor, thiszone, \
+            sigfigs, snaplen, network = struct.unpack(self.header, chunk)
             
-            magic, version_major, version_minor, thiszone, \
-                sigfigs, snaplen, network = struct.unpack(self.header, chunk)
-                
-            if magic == self.magic:
-                self.report(str(item),
-                    line=1,
-                    version='%d.%d' % (version_major, version_minor),
-                    version_major=version_major,
-                    version_minor=version_minor,
-                    linktype=self.linktype.get(network, 'Unknown'),
-                )
+        if magic == self.magic:
+            self.report(item,
+                line=1,
+                version='%d.%d' % (version_major, version_minor),
+                version_major=version_major,
+                version_minor=version_minor,
+                linktype=self.linktype.get(network, 'Unknown'),
+            )

@@ -2,4 +2,5 @@
 *.pyc
 *.pyo
 *.swp
-build/
+.DS_Store
+/build

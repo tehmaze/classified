@@ -1,11 +1,10 @@
 # Python imports
 import fnmatch
 import logging
-import os
 import re
 
 # Project imports
-from classified.meta import File, Path
+from classified.meta import Path
 from classified.probe import get_probe
 #from classified.probe.all import *
 
@@ -32,12 +31,16 @@ class Scanner(object):
         self.mindepth = int(self.config.getdefault('scanner', 'mindepth', -1))
         self.maxdepth = int(self.config.getdefault('scanner', 'maxdepth', -1))
 
+        # Deflation of archives enabled?
+        self.deflate = self.config.getboolean('scanner', 'deflate')
+
         # Import probes
         for option in self.config.getlist('scanner', 'include_probe'):
             try:
                 __import__('classified.probe.%s' % option)
-            except ImportError:
-                raise TypeError('Invalid probe enabled: %s' % option)
+            except ImportError, e:
+                raise TypeError('Invalid probe %s enabled: %s' % (option,
+                    str(e)))
 
         # Setup probes
         self.probes = {}
@@ -53,11 +56,15 @@ class Scanner(object):
             logging.warning('could not start probe %s: not implemented' % name)
 
     def scan(self, path):
-        for item in self.walk(path):
-            filename = str(item)
+        for item in Path(path).walk():
+            # No readable file? Skip
+            if not item.readable:
+                logging.debug('skipping %s: not readable' % item)
+                continue
 
             # No mime type? Skip
             if item.mimetype is None:
+                logging.debug('skipping %s: no mimetype' % item)
                 continue
 
             # File system type exclusions
@@ -73,45 +80,3 @@ class Scanner(object):
                 if pattern.match(item.mimetype):
                     for probe in probes:
                         self.probe(item, probe)
-
-    def walk(self, path=None, depth=0):
-        path = os.path.abspath(path or self.path)
-        if not os.path.isdir(path):
-            raise TypeError('Not a directory: %s' % path)
-
-        elif os.path.basename(path) in self.exclude_fs:
-            logging.info('skipping %s: excluded' % path)
-
-        else:
-            for item in os.listdir(path):
-                full = os.path.join(path, item)
-                for leaf in self.walk_item(full, depth):
-                    yield leaf
-
-    def walk_item(self, full, depth=0):
-        base = os.path.basename(full)
-
-        if os.path.isdir(full):
-            if base in self.exclude_dirs:
-                logging.info('skipping %s: excluded dir' % full)
-
-            elif self.maxdepth >= 0 and (depth + 1) >= self.maxdepth:
-                logging.debug('skipping %s: max depth reachead' % full)
-
-            else:
-                # Iterate over child directory
-                for leaf in self.walk(full, depth + 1):
-                    yield leaf
-
-        elif os.path.islink(full):
-            if self.exclude_link:
-                logging.info('skipping %s: excluded link' % full)
-
-            else:
-                # Treat link target as new item to walk
-                target = os.readlink(full)
-                for leaf in self.walk_item(target):
-                    yield leaf
-
-        else:
-            yield File(full)

@@ -33,15 +33,15 @@ class Probe(object):
     def probe(self, item):
         raise NotImplementedError
     
-    def report(self, filename, **kwargs):
+    def report(self, item, **kwargs):
         format = self.config.getdefault('probe:%s' % self.name, 'format',
             self.format) 
         
-        kwargs['filename'] = filename
-        kwargs['filename_relative'] = filename.replace(os.getcwd(), '.')
+        kwargs['filename'] = str(item)
+        kwargs['filename_relative'] = str(item).replace(os.getcwd(), '.')
 
         # Find out who owns the file
-        info = os.stat(filename)
+        info = item.stat()
         kwargs['uid'] = info[stat.ST_UID]
         kwargs['gid'] = info[stat.ST_GID]
         try:

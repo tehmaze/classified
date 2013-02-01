@@ -15,20 +15,20 @@ class Password(Probe):
         filename = str(item)
         basename = os.path.basename(filename)
 
-        handle = open(str(item), 'rb')
+        item.open()
         try:
             if 'pgpass' in basename:
-                self.probe_pgpass(item, handle)
+                self.probe_pgpass(item)
 
             # Scan for passwords heuristically in any case            
             line = 0
-            for text in handle:
+            for text in item:
                 line += 1
                 for password in self.re_password.findall(text):
                     if password == '':
                         continue
 
-                    self.report(str(item),
+                    self.report(item,
                         type='password',
                         line=line,
                         text=text.rstrip(),
@@ -37,15 +37,15 @@ class Password(Probe):
                         password_masked='********',
                     )
         finally:
-            handle.close()
+            item.close()
     
-    def probe_pgpass(self, item, handle):
+    def probe_pgpass(self, item):
         line = 0
-        for text in handle:
+        for text in item:
             line += 1
             part = text.split(':')
             if len(part) == 5 and part[4]:
-                self.report(str(item),
+                self.report(item,
                     type='pgpass',
                     line=line,
                     text=text.rstrip(),
@@ -54,4 +54,4 @@ class Password(Probe):
                     password_masked='********',
                 )
         
-        handle.seek(0)  # reset file handle
+        item.seek(0)  # reset file handle
