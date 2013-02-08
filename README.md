@@ -7,11 +7,15 @@ maintaining PCI DSS compliance.
 
 ## Requirements
 
-Classified is suitable for Python 2.4 - Python 2.7. With little effort it could
+Classified is suitable for Python 2.6 - Python 2.7. With little effort it could
 be ported to Python 3.x as well.
 
 Required:
 *  [Python 2.6 - 2.7](http://python.org/)
+
+The current reporting code will not work on Python version 2.4 or 2.5, because
+we rely on [PEP 3101](http://www.python.org/dev/peps/pep-3101/) compatible
+string formatting.
 
 ## Requirements (optional)
 
@@ -22,6 +26,10 @@ Optionally, install:
 
 
 ## Installing (Debian, Ubuntu)
+
+Install the required packages:
+
+    $ sudo apt-get install python-magic python-lzma
 
 You can use [pip](http://www.pip-installer.org/) to install Classified:
 
@@ -41,14 +49,6 @@ install:
 
 You need the following additional Python packages:
 *  [python-magic](http://pypi.python.org/pypi/python-magic)
-
-
-## Installing (Debian, Ubuntu)
-
-You need to following packages installed:
-*  python
-*  python-lzma
-*  python-magic
 
 
 ## Usage
