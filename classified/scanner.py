@@ -51,12 +51,14 @@ class Scanner(object):
     def probe(self, item, name):
         try:
             probe = get_probe(name)(self.config)
-            probe.probe(item)
+            if probe.can_probe(item):
+                probe.probe(item)
         except NotImplementedError:
             logging.warning('could not start probe %s: not implemented' % name)
 
     def scan(self, path):
-        for item in Path(path).walk():
+        deflate = self.config.getboolean('scanner', 'deflate')
+        for item in Path(path).walk(deflate):
             if item is None:
                 continue
 
