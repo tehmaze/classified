@@ -173,7 +173,7 @@ class PAN(Probe):
                 self.config.getlist('probe:pan', 'ignore')
             )
 
-    def check(self, card_number):
+    def luhn_check(self, card_number):
         # Do the Luhn check
         if verify(card_number):
             return self.process_prefix(card_number)
@@ -217,9 +217,10 @@ class PAN(Probe):
                 if len(digits) >= digits_min:
                     for x in xrange(digits_min, digits_max + 1):
                         card_number = ''.join(map(str, digits[:x]))
-                        card_company = self.check(card_number)
+                        card_company = self.luhn_check(card_number)
                         if card_company is not None:
                             self.report(item,
+                                raw=text,
                                 line=line,
                                 card_number=card_number,
                                 card_number_masked=mask(card_number),

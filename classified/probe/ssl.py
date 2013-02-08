@@ -37,9 +37,11 @@ class SSL(Probe):
                 # No SSH private key was found
                 return
 
+            data = ''
             line = ''
             while line == '':
-                line = item.readline().strip()
+                data = item.readline()
+                line = data.strip()
 
             if line.startswith('Proc-Type:') and 'ENCRYPTED' in line:
                 key_info = ['encrypted']
@@ -53,6 +55,7 @@ class SSL(Probe):
                 key_info.append('protected')
 
             self.report(item,
+                raw=data,
                 line=lineno,
                 key=key,
                 key_info=' '.join(key_info),

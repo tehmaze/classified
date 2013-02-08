@@ -29,6 +29,7 @@ class Password(Probe):
                         continue
 
                     self.report(item,
+                        raw=text,
                         type='password',
                         line=line,
                         text=text.rstrip(),
@@ -38,7 +39,7 @@ class Password(Probe):
                     )
         finally:
             item.close()
-    
+
     def probe_pgpass(self, item):
         line = 0
         for text in item:
@@ -46,6 +47,7 @@ class Password(Probe):
             part = text.split(':')
             if len(part) == 5 and part[4]:
                 self.report(item,
+                    raw=text,
                     type='pgpass',
                     line=line,
                     text=text.rstrip(),
@@ -53,5 +55,5 @@ class Password(Probe):
                     password=part[4],
                     password_masked='********',
                 )
-        
+
         item.seek(0)  # reset file handle
