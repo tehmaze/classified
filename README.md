@@ -12,6 +12,8 @@ be ported to Python 3.x as well.
 
 Required:
 *  [Python 2.6 - 2.7](http://python.org/)
+*  [python-magic](http://pypi.python.org/pypi/python-magic), for mime type
+   detection
 
 The current reporting code will not work on Python version 2.4 or 2.5, because
 we rely on [PEP 3101](http://www.python.org/dev/peps/pep-3101/) compatible
