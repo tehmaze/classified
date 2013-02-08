@@ -73,8 +73,8 @@ class Path(object):
     def __str__(self):
         return self.path
 
-    def walk(self, recurse=True):
-        for item in self.walk_tree():
+    def walk(self, recurse=True, deflate=True):
+        for item in self.walk_tree(deflate):
             if item is None:
                 continue
 
@@ -84,17 +84,17 @@ class Path(object):
                     for sub in item.walk():
                         yield sub
 
-    def walk_tree(self):
+    def walk_tree(self, deflate):
         for item in os.listdir(self.path):
             full = os.path.join(self.path, item)
             if os.path.isdir(full):
                 yield Path(full)
             else:
-                yield File.maybe(full)
+                yield File.maybe(full, deflate_if_archive=deflate)
+
 
 class File(Path):
     Corrupt = CorruptionError
-
 
     def __init__(self, path):
         super(File, self).__init__(path)
@@ -117,9 +117,9 @@ class File(Path):
             self.path, self.mimetype, self.mount.fs['type'])
 
     # Method that does archive detection
-    def maybe(path):
+    def maybe(path, deflate_if_archive=True):
         instance = File(path)
-        if instance.mimetype in Archive.supported_mimetypes:
+        if deflate_if_archive and instance.mimetype in Archive.supported_mimetypes:
             try:
                 instance = Archive(instance)
                 logging.debug('opened archive %s: %s' % (instance,
@@ -127,9 +127,8 @@ class File(Path):
             except CorruptionError, e:
                 logging.error('failed to inspect archive %s: %s' % (instance,
                     e))
-                return instance
-        else:
-            return instance
+
+        return instance
 
     maybe = staticmethod(maybe)
 
@@ -421,8 +420,12 @@ class ArchiveFile(File):
 
     def mimetype_get(self):
         if not hasattr(self, '_mimetype'):
-            self.open('rb')
-            self._mimetype = magic.from_buffer(self.read(1024), mime=True)
+            try:
+                self.open('rb')
+            except CorruptionError:
+                self._mimetype = None
+            else:
+                self._mimetype = magic.from_buffer(self.read(1024), mime=True)
         return self._mimetype
 
     mimetype = property(mimetype_get)
