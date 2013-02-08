@@ -15,11 +15,15 @@ class SSL(Probe):
             key_info = ['plaintext']
             key_type = None
 
+            data = ''
             line = ''
             lineno = 0
             while line == '':
-                line = item.readline().strip()
+                data = item.readline()
+                line = data.strip()
                 lineno += 1
+                if data == '':  # EOF?
+                    break
 
             if '-----BEGIN RSA PRIVATE KEY-----' in line:
                 key = 'RSA private key'

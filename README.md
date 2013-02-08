@@ -11,7 +11,7 @@ Classified is suitable for Python 2.4 - Python 2.7. With little effort it could
 be ported to Python 3.x as well.
 
 Required:
-*  [Python 2.4 - 2.7](http://python.org/)
+*  [Python 2.6 - 2.7](http://python.org/)
 
 ## Requirements (optional)
 
@@ -33,13 +33,22 @@ You can use [pip](http://www.pip-installer.org/) to install Classified:
 
 ## Installing (CentOS, Red Hat)
 
-You can use the spec file shipped with Classified:
+For CentOS and Red Hat Enterprise Linux version 5, you will need to enable the
+[Extra Packages for Enterprise Linux](https://fedoraproject.org/wiki/EPEL) and
+install:
+*  python26
+*  python26-devel
 
-    $ wget -sO classified.zip \
-        https://github.com/tehmaze/classified/archive/master.zip
-    $ rpmbuild -ta classified.zip
-    ...
-    $ sudo rpm -ivh /path/to/classified-x.y.z.arch.rpm
+You need the following additional Python packages:
+*  [python-magic](http://pypi.python.org/pypi/python-magic)
+
+
+## Installing (Debian, Ubuntu)
+
+You need to following packages installed:
+*  python
+*  python-lzma
+*  python-magic
 
 
 ## Usage

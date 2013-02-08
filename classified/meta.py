@@ -274,7 +274,10 @@ class Archive(File):
     def _recursor_zip(self):
         for item in self.handle.infolist():
             full = os.path.join(self.path, item.filename)
-            yield ArchiveFile(full, self)
+            try:
+                yield ArchiveFile(full, self)
+            except KeyError:  # No file in archive
+                pass
 
     def walk(self):
         if self.walkable:

@@ -6,7 +6,10 @@ import os
 import sys
 
 
+# Probe lookup map
 PROBES = dict()
+# Probe lookup map for ignores
+IGNORE = dict()
 
 
 def get_probe(name):

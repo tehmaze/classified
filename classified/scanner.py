@@ -2,6 +2,8 @@
 import fnmatch
 import logging
 import re
+import traceback
+import StringIO
 
 # Project imports
 from classified.meta import Path, CorruptionError
@@ -49,12 +51,19 @@ class Scanner(object):
             self.probes[pattern] = self.config.getlist('probe', option)
 
     def probe(self, item, name):
+        logging.debug('probe %s on %r' % (name, item))
         try:
             probe = get_probe(name)(self.config)
             if probe.can_probe(item):
                 probe.probe(item)
         except NotImplementedError:
             logging.warning('could not start probe %s: not implemented' % name)
+        except Exception, error:
+            logging.error('probe %s on %r failed: %s' % (name, item, error))
+            buffer = StringIO.StringIO()
+            traceback.print_exc(file=buffer)
+            for line in buffer.getvalue().splitlines():
+                logging.debug(line)
 
     def scan(self, path):
         deflate = self.config.getboolean('scanner', 'deflate')

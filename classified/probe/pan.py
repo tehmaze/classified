@@ -1,7 +1,7 @@
 # Parts are courtesey of `Ben Hogdson <http://benhodgson.com/>`_.
 
 # Python imports
-import os
+import logging
 import re
 
 # Project imports
@@ -194,6 +194,12 @@ class PAN(Probe):
         digits_max = max(self._check_size)
 
         line = 0
+        hits = 0
+        try:
+            limit = self.config.getint('probe:pan', 'limit')
+        except self.config.NoOptionError:
+            limit = 0
+
         for text in item.open():
             line += 1
 
@@ -226,5 +232,13 @@ class PAN(Probe):
                                 card_number_masked=mask(card_number),
                                 company=card_company,
                             )
+
+                            # Rotate digits
                             digits = digits[x:]
+
+                            # Keep track of hits
+                            hits += 1
+                            if limit and hits >= limit:
+                                logging.debug('pan probe hit limit of %d' % limit)
+                                return
                             break
