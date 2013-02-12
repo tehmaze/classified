@@ -7,6 +7,7 @@ ext_modules = [
         ['src/classified._platform.c'],
         extra_compile_args=[
             '-DPLATFORM_%s' % (sys.platform.upper()),
+            '-Wunused',
         ]
     )
 ]
