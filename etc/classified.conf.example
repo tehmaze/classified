@@ -90,6 +90,12 @@ format      = {filename_relative}[{line:d}]: {company} {card_number_masked}
 limit       = 5
 
 
+[probe:password]
+; Regular expression pattern to look for passwords. The expression must contain
+; at least the `password` match group.
+pattern     = pass(?:|wd|word)[ \s\t=:]+(?P<password>\S+)\s*(?:['"]|$)
+
+
 [probe:pcap]
 format      = {filename_relative}[{line:d}]: pcap v{version} ({linktype})
 

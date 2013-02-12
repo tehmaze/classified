@@ -8,8 +8,17 @@ from classified.probe.base import Probe
 
 
 class Password(Probe):
-    re_password = re.compile(r'pass(?:|wd|word)[ \s\t=:]+(?P<password>.*)')
+    default_pattern = r'pass(?:|wd|word)[ \s\t=:]+(?P<password>.*)'
     format = '{filename_relative}[{line}]: {type} {text_masked}'
+
+    def __init__(self, config, *args, **kwargs):
+        super(Password, self).__init__(*args, **kwargs)
+
+        try:
+            pattern = self.config.get('pan:password', 'pattern')
+        except self.config.NoOptionError:
+            pattern = self.default_pattern
+        self.re_password = re.compile(pattern)
 
     def probe(self, item):
         filename = str(item)
