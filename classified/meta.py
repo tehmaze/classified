@@ -288,20 +288,26 @@ class Archive(File):
     def _recursor_rar(self):
         for item in self.handle.infolist():
             full = os.path.join(self.path, item.filename)
-            yield ArchiveFile(full, self)
+            try:
+                yield ArchiveFile(full, self)
+            except KeyError:  # File not in archive
+                pass
 
     def _recursor_tar(self):
         for item in self.handle.getmembers():
             full = os.path.join(self.path, item.name)
             if item.type == tarfile.REGTYPE:
-                yield ArchiveFile(full, self)
+                try:
+                    yield ArchiveFile(full, self)
+                except KeyError:  # File not in archive
+                    pass
 
     def _recursor_zip(self):
         for item in self.handle.infolist():
             full = os.path.join(self.path, item.filename)
             try:
                 yield ArchiveFile(full, self)
-            except KeyError:  # No file in archive
+            except KeyError:  # File not in archive
                 pass
 
     def walk(self):
