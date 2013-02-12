@@ -17,17 +17,21 @@ class Scanner(object):
 
         # Excluded file system types
         try:
-            self.exclude_dirs = self.config.getlist('scanner', 'exclude_dirs')
+            self.exclude_dirs = self.config.getmulti('scanner', 'exclude_dirs')
         except self.config.NoOptionError:
             self.exclude_dirs = []
         try:
-            self.exclude_fs = self.config.getlist('scanner', 'exclude_fs')
+            self.exclude_fs = self.config.getmulti('scanner', 'exclude_fs')
         except self.config.NoOptionError:
             self.exclude_fs = []
         try:
             self.exclude_link = self.config.getboolean('scanner', 'exclude_link')
         except self.config.NoOptionError:
             self.exclude_link = True
+        try:
+            self.exclude_type = self.config.getmulti('scanner', 'exclude_type')
+        except self.config.NoOptionError:
+            self.exclude_type = []
 
         # Max traversal depths
         self.mindepth = int(self.config.getdefault('scanner', 'mindepth', -1))
@@ -73,12 +77,18 @@ class Scanner(object):
 
             # No readable file? Skip
             if not item.readable:
-                logging.debug('skipping %s: not readable' % item)
+                logging.debug('skipping %s: no readable content' % item)
                 continue
 
             # No mime type? Skip
-            if item.mimetype is None:
+            elif item.mimetype is None:
                 logging.debug('skipping %s: no mimetype' % item)
+                continue
+
+            # Mime type exclusions
+            elif item.mimetype in self.exclude_type:
+                logging.debug('skipping %s: mimetype %s excluded' % (item,
+                    item.mimetype))
                 continue
 
             # File system type exclusions
