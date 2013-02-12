@@ -7,6 +7,8 @@ class Config(ConfigParser):
     NoOptionError = NoOptionError
     NoSectionError = NoSectionError
 
+    re_padding = re.compile(r'(^[\s\t,]+|[\s\t,]+$)')
+
     def __init__(self, filename, *args, **kwargs):
         ConfigParser.__init__(self, *args, **kwargs)
         self.read([filename])
@@ -23,8 +25,12 @@ class Config(ConfigParser):
 
     def getmulti(self, section, option, strip_comments=True):
         multi = []
-        for item in self.getlist(section, option, '\n'):
+        for item in self.get(section, option).splitlines():
+            # Remove comments, if enabled
             if strip_comments:
-                item = item.split(' #', 1)[0].rstrip()
+                item = item.rsplit(' #', 1)[0]
+
+            # Clean up padding
+            item = self.re_padding.sub('', item)
             multi.append(item)
         return multi
