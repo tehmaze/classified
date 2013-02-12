@@ -8,6 +8,8 @@
 ; transparently decompress files. Note that this highly depends on the
 ; availability of optionally installed decompression modules for Python.
 deflate       = yes
+; Deflate size limit (in bytes)
+deflate_limit = 104857600
 
 ; Enabled probe types
 include_probe = pan, password, pcap, ssl
