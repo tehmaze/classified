@@ -71,7 +71,12 @@ class Scanner(object):
 
     def scan(self, path):
         deflate = self.config.getboolean('scanner', 'deflate')
-        for item in Path(path).walk(deflate):
+        try:
+            deflate_limit = self.config.getint('scanner', 'deflate_limit')
+        except self.config.NoOptionError:
+            deflate_limit = 0
+
+        for item in Path(path).walk(deflate=deflate, deflate_limit=deflate_limit):
             if item is None:
                 continue
 

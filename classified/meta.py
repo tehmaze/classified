@@ -73,8 +73,8 @@ class Path(object):
     def __str__(self):
         return self.path
 
-    def walk(self, recurse=True, deflate=True):
-        for item in self.walk_tree(deflate):
+    def walk(self, recurse=True, deflate=True, deflate_limit=0):
+        for item in self.walk_tree(deflate, deflate_limit):
             if item is None:
                 continue
 
@@ -84,13 +84,20 @@ class Path(object):
                     for sub in item.walk():
                         yield sub
 
-    def walk_tree(self, deflate):
-        for item in os.listdir(self.path):
-            full = os.path.join(self.path, item)
-            if os.path.isdir(full):
-                yield Path(full)
-            else:
-                yield File.maybe(full, deflate_if_archive=deflate)
+    def walk_tree(self, deflate, deflate_limit):
+        if os.access(self.path, os.R_OK):
+            for item in os.listdir(self.path):
+                full = os.path.join(self.path, item)
+                if os.path.isdir(full):
+                    yield Path(full)
+                else:
+                    mount_hint = getattr(self, '_mount', None)
+                    yield File.maybe(full,
+                        deflate_if_archive=deflate,
+                        deflate_limit=deflate_limit,
+                        mount_hint=mount_hint)
+        else:
+            logging.error('%s not accessible, skipping' % (self.path,))
 
 
 class File(Path):
@@ -117,11 +124,16 @@ class File(Path):
             self.path, self.mimetype, self.mount.fs['type'])
 
     # Method that does archive detection
-    def maybe(path, deflate_if_archive=True):
+    def maybe(path, deflate_if_archive=True, deflate_limit=0, mount_hint=None):
         instance = File(path)
         if deflate_if_archive and instance.mimetype in Archive.supported_mimetypes:
+            if deflate_limit > 0 and instance.size > deflate_limit:
+                logging.warning('skipped archive %s: too big (%s > %s)' % \
+                    (instance, instance.size, deflate_limit))
+                return instance
+
             try:
-                instance = Archive(instance)
+                instance = Archive(instance, mount_hint)
                 logging.debug('opened archive %s: %s' % (instance,
                     instance.mimetype))
             except CorruptionError, e:
@@ -194,6 +206,11 @@ class File(Path):
 
     mount = property(mount_get, mount_set)
 
+    def size_get(self):
+        return self.stat()[stat.ST_SIZE]
+
+    size = property(size_get)
+
 
 class Mount(Path):
     def __init__(self, path):
@@ -217,12 +234,15 @@ class Archive(File):
         'application/zip',
     ]
 
-    def __init__(self, path, hint=None):
+    def __init__(self, path, mount_hint=None):
         super(Archive, self).__init__(path)
 
         # Flags used by recursor
         self.walkable = True
         self.readable = False
+
+        if not mount_hint is None:
+            self._mount = mount_hint
 
         base, mimetype = self.mimetype.split('/', 1)
         if mimetype in ['x-bzip2', 'x-gzip', 'x-xz']:
@@ -298,7 +318,7 @@ class ArchiveFile(File):
 
         self.walkable = False
 
-        if isinstance(self.archive.handle, rarfile.RarFile):
+        if rarfile and isinstance(self.archive.handle, rarfile.RarFile):
             self.member = self.archive.handle.getinfo(self.filename)
             self.readable = True
 
@@ -337,7 +357,7 @@ class ArchiveFile(File):
             except lzma.LZMAError, e:
                 raise Archive.Corrupt(self.path)
 
-        elif isinstance(self.archive.handle, rarfile.RarFile):
+        elif rarfile and isinstance(self.archive.handle, rarfile.RarFile):
             mode = mode.replace('b', '')  # not supported in rar files
             try:
                 self.handle = self.archive.handle.open(self.filename, mode)
