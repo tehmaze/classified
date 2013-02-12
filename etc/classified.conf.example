@@ -19,7 +19,21 @@ exclude_link  = no
 ;exclude_dirs  = .bzr, .cdv, .git, .hg, .svn
 
 ; Excluded file system types
-exclude_fs    = binfmt_misc, devfs, devpts, fuse, nfs, proc, rpc_pipefs, sysfs, usbfs
+exclude_fs    = binfmt_misc
+                devfs
+                devpts
+                fuse
+                nfs
+                proc
+                rpc_pipefs
+                sysfs
+                usbfs
+
+; Excluded mime types
+exclude_type  = application/x-rpm
+                application/x-dosexec
+                application/x-executable
+                application/x-not-regular-file
 
 mindepth      = -1
 maxdepth      = -1
