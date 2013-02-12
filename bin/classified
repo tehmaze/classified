@@ -18,6 +18,8 @@ def run():
         help='Configuration file')
     parser.add_option('-v', '--verbose', action='store_true', default=False,
         help='Be verbose (default: no)')
+    parser.add_option('-i', '--incremental', action='store_true', default=False,
+        help='Be incremental (default: do full scan)')
 
     option, args = parser.parse_args()
     if not args:
@@ -27,6 +29,9 @@ def run():
         logging.basicConfig(level=logging.DEBUG)
 
     config = Config(option.config)
+    if option.incremental:
+        config.set('scanner', 'incremental', True)
+
     scanner = Scanner(config)
 
     for path in args:

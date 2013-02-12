@@ -6,6 +6,7 @@ import traceback
 import StringIO
 
 # Project imports
+from classified.incremental import Incremental
 from classified.meta import Path, CorruptionError
 from classified.probe import get_probe
 #from classified.probe.all import *
@@ -39,6 +40,15 @@ class Scanner(object):
 
         # Deflation of archives enabled?
         self.deflate = self.config.getboolean('scanner', 'deflate')
+
+        # Incremental enabled?
+        try:
+            if self.config.getboolean('scanner', 'incremental'):
+                self.incremental = Incremental(self.config)
+            else:
+                self.incremental = False
+        except self.config.NoOptionError:
+            self.incremental = False
 
         # Import probes
         for option in self.config.getlist('scanner', 'include_probe'):
@@ -102,9 +112,14 @@ class Scanner(object):
                     item.mount.fs['type']))
                 continue
 
+            elif self.incremental and item in self.incremental:
+                logging.debug('skipping %s: file in incremental cache' % item)
+                continue
+
             else:
                 logging.debug('scanning %r' % item)
 
+            success = True
             for pattern, probes in self.probes.iteritems():
                 if pattern.match(item.mimetype):
                     for probe in probes:
@@ -113,3 +128,7 @@ class Scanner(object):
                         except CorruptionError, e:
                             logging.error('probe %s on %s failed: %s' % (probe,
                                 item, e))
+                            success = False
+
+            if self.incremental and success:
+                self.incremental.add(item)

@@ -206,6 +206,11 @@ class File(Path):
 
     mount = property(mount_get, mount_set)
 
+    def mtime_get(self):
+        return self.stat()[stat.ST_MTIME]
+
+    mtime = property(mtime_get)
+
     def size_get(self):
         return self.stat()[stat.ST_SIZE]
 

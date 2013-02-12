@@ -40,6 +40,30 @@ exclude_type  = application/x-rpm
 mindepth      = -1
 maxdepth      = -1
 
+; If enabled, only scan files that have changed
+;incremental  = yes
+
+
+; Incremental configuration
+; -------------------------
+
+[incremental]
+; Path of the dbm file cache
+database      = /var/cache/classified/incremental.db
+
+; Checksum algorithm, options are:
+; *  mtime (do not compare file contents, only mtime)
+; *  adler32
+; *  crc32
+; *  md5
+; *  sha1
+; *  sha224
+; *  sha256
+; *  sha384
+; *  sha512
+; *  ... and all algorithms your OpenSSL library might offer
+algorithm     = sha1
+
 
 ; Probe definitions
 ; -----------------
