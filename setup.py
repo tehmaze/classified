@@ -24,6 +24,9 @@ setup(
     packages     = [
         'classified',
         'classified.probe',
+        'classified.probe.pan',
+        'classified.probe.password',
+        'classified.probe.ssl',
     ],
     data_files   = [
         ('/etc/classified', 'etc/classified.conf.sample'),
