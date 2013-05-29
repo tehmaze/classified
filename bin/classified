@@ -14,10 +14,12 @@ def run():
     import optparse
 
     parser = optparse.OptionParser(usage='%prog <path[ .. <path>]>')
-    parser.add_option('-c', '--config', default='/etc/classified/classified.conf',
-        help='Configuration file')
+    parser.add_option('-q', '--quiet', action='store_true', default=False,
+        help='Be quiet (default: no)')
     parser.add_option('-v', '--verbose', action='store_true', default=False,
         help='Be verbose (default: no)')
+    parser.add_option('-c', '--config', default='/etc/classified/classified.conf',
+        help='Configuration file')
     parser.add_option('-i', '--incremental', action='store_true', default=False,
         help='Be incremental (default: do full scan)')
 
@@ -25,8 +27,15 @@ def run():
     if not args:
         return parser.error('need at least one path to work with')
 
-    if option.verbose:
+    if option.verbose and option.quiet:
+        return parser.error('--quiet and --verbose are mutually exclusive')
+
+    if option.quiet:
+        logging.basicConfig(level=logging.CRITICAL)
+    elif option.verbose:
         logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.ERROR)
 
     config = Config(option.config)
     if option.incremental:
