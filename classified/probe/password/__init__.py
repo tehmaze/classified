@@ -12,10 +12,10 @@ class Password(Probe):
     format = '{filename_relative}[{line}]: {type} {text_masked}'
 
     def __init__(self, config, *args, **kwargs):
-        super(Password, self).__init__(*args, **kwargs)
+        super(Password, self).__init__(config, *args, **kwargs)
 
         try:
-            pattern = self.config.get('pan:password', 'pattern')
+            pattern = self.config.get('probe:password', 'pattern')
         except self.config.NoOptionError:
             pattern = self.default_pattern
         self.re_password = re.compile(pattern)
