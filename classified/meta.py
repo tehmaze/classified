@@ -137,7 +137,7 @@ class File(Path):
                 logging.debug('opened archive %s: %s' % (instance,
                     instance.mimetype))
             except CorruptionError, e:
-                logging.error('failed to inspect archive %s: %s' % (instance,
+                logging.warn('failed to inspect archive %s: %s' % (instance,
                     e))
 
         return instance
@@ -264,15 +264,23 @@ class Archive(File):
                 elif mimetype == 'x-gzip':
                     self.handle = gzip.open(self.path)
                 elif mimetype == 'x-xz':
-                    self.handle = lzma.open(self.path)
+                    # Both lzma, backports.lzma and pyliblzma provide the lzma
+                    # module for importing, yet they have a different API
+                    if hasattr(lzma, 'open'):
+                        self.handle = lzma.open(self.path)
+                    elif hasattr(lzma, 'LZMAFile'):  # pyliblzma
+                        self.handle = lzma.LZMAFile(self.path, mode='r')
 
                 # Override mimetype by the mimetype of the compressed file
                 self.mimetype = magic.from_buffer(self.read(1024), mime=True)
 
-        elif mimetype == 'x-rar':
-            self.handle = rarfile.RarFile(self.path)
+        elif mimetype == 'x-rar' and rarfile is not None:
+            try:
+                self.handle = rarfile.RarFile(self.path)
+            except OSError:
+                warnings.userwarning('Failed to open rar archive, have you '
+                                     'installed the unrar binary?')
             self.recursor = self._recursor_rar
-            self.handle = rarfile.RarFile(self.path)
 
         elif mimetype == 'x-tar':
             self.handle = tarfile.open(self.path)
@@ -375,13 +383,17 @@ class ArchiveFile(File):
                 return self.handle
             except rarfile.BadRarFile:
                 raise Archive.Corrupt(self.path)
+            except OSError:
+                logging.error('failed to open rar archive, did you install '
+                              'the unrar binary?')
+                raise Archive.Corrupt(self.path)
 
         elif isinstance(self.archive.handle, tarfile.TarFile):
             try:
                 self.handle = tarfile.TarFile.fileobject(self.archive.handle,
                     self.member)
                 return self.handle
-            except tarfile.TarError, e:
+            except tarfile.TarError:
                 raise Archive.Corrupt(self.path)
 
         elif isinstance(self.archive.handle, zipfile.ZipFile):
