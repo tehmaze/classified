@@ -26,6 +26,7 @@ setup(
         'classified.probe',
         'classified.probe.pan',
         'classified.probe.password',
+        'classified.probe.pcap',
         'classified.probe.ssl',
     ],
     data_files   = [
