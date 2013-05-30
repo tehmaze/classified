@@ -8,7 +8,7 @@ from classified.probe.base import Probe
 
 
 class Password(Probe):
-    default_pattern = r'pass(?:|wd|word)[ \s\t=:]+(?P<password>.*)'
+    default_pattern = r'\bpass(?:|wd|word)\b[ \s\t=:]+(?P<password>.*)'
     format = '{filename_relative}[{line}]: {type} {text_masked}'
 
     def __init__(self, config, *args, **kwargs):

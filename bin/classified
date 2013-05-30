@@ -22,6 +22,10 @@ def run():
         help='Configuration file')
     parser.add_option('-i', '--incremental', action='store_true', default=False,
         help='Be incremental (default: do full scan)')
+    parser.add_option('-r', '--report', action='store_true', default=False,
+        help='Generate a report')
+    parser.add_option('-R', '--report-format', default='text',
+        help='Report format (default: text, options: html,text)')
 
     option, args = parser.parse_args()
     if not args:
@@ -41,11 +45,13 @@ def run():
     if option.incremental:
         config.set('scanner', 'incremental', True)
 
-    scanner = Scanner(config)
+    scanner = Scanner(config, option)
 
     for path in args:
         scanner.scan(os.path.expanduser(path))
 
+    if option.report:
+        scanner.report(format=option.report_format)
 
 if __name__ == '__main__':
     sys.exit(run())

@@ -1,4 +1,5 @@
 # Python imports
+from collections import defaultdict
 import fnmatch
 import grp
 import logging
@@ -6,10 +7,11 @@ import os
 import pwd
 import re
 import stat
+import sys
 
 # Project imports
 from classified import checksum
-from classified.probe import PROBES, IGNORE
+from classified.probe import PROBES, IGNORE, REPORT
 
 
 class ProbeTracker(type):
@@ -24,17 +26,25 @@ class ProbeTracker(type):
 
 class Probe(object):
     __metaclass__ = ProbeTracker
+    default_buffer = sys.stdout
     format = None
     name = None
 
-    def __init__(self, config):
+    def __init__(self, config, buffer=None):
         self.config = config
         self.name = self.name or self.__class__.__name__.lower()
+        if not self.name in REPORT:
+            REPORT[self.name] = dict(uid=[], filename=[])
 
         # Lookup algorithm for doing checks
         self.algorithm = self.config.getdefault('clean:%s' % self.name,
             'algorithm', self.config.getdefault('clean', 'algorithm', 'sha1')
         )
+
+        if buffer is None:
+            self.buffer = self.default_buffer
+        else:
+            self.buffer = buffer
 
         # See if the ignores are already parsed
         if self.name not in IGNORE:
@@ -143,4 +153,8 @@ class Probe(object):
         # Retrieve configured format
         format = self.config.getdefault('probe:%s' % self.name, 'format',
             self.format) 
-        print format.format(**kwargs)
+        self.buffer.write('{}\n'.format(format.format(**kwargs)))
+
+        # Keep track of reported items
+        REPORT[self.name]['filename'].append(str(item))
+        REPORT[self.name]['uid'].append(kwargs['uid'])

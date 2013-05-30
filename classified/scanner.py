@@ -2,19 +2,30 @@
 import fnmatch
 import logging
 import re
+import datetime
 import traceback
+import socket
 import StringIO
+import sys
+import pwd
 
 # Project imports
 from classified.incremental import Incremental
 from classified.meta import Path, CorruptionError
-from classified.probe import get_probe
-#from classified.probe.all import *
+from classified.probe import get_probe, REPORT
+from classified.utils import flatten, leaders
+
+# Third party imports
+try:
+    import markdown
+except ImportError:
+    markdown = None
 
 
 class Scanner(object):
-    def __init__(self, config):
+    def __init__(self, config, option):
         self.config = config
+        self.started = datetime.datetime.now()
 
         # Excluded file system types
         try:
@@ -50,6 +61,15 @@ class Scanner(object):
         except self.config.NoOptionError:
             self.incremental = False
 
+        # Report enabled?
+        if option.report:
+            if option.report_format == 'html' and markdown is None:
+                raise RuntimeError('HTML report selected, but Markdown is not'
+                                   ' installed')
+            self.buffer = StringIO.StringIO()
+        else:
+            self.buffer = sys.stdout
+
         # Import probes
         for option in self.config.getlist('scanner', 'include_probe'):
             try:
@@ -67,7 +87,7 @@ class Scanner(object):
     def probe(self, item, name):
         logging.debug('probe %s on %r' % (name, item))
         try:
-            probe = get_probe(name)(self.config)
+            probe = get_probe(name)(self.config, buffer=self.buffer)
             if probe.can_probe(item):
                 probe.probe(item)
         except NotImplementedError:
@@ -78,6 +98,70 @@ class Scanner(object):
             traceback.print_exc(file=buffer)
             for line in buffer.getvalue().splitlines():
                 logging.debug(line)
+
+    def report(self, format='text'):
+        finished = datetime.datetime.now() - self.started
+        scanned = sum(map(len, [x['filename'] for x in REPORT.values()]))
+        seen = len(set(flatten([x['uid'] for x in REPORT.values()])))
+
+        if format == 'html':
+            buffer = StringIO.StringIO()
+        else:
+            buffer = sys.stdout
+
+        buffer.write('# Report for {}\n'.format(socket.gethostname()))
+        buffer.write('\n\n')
+        buffer.write('## Statistics\n\n')
+        buffer.write('*  runtime  {}\n'.format(finished))
+        buffer.write('*  scanned  {} files\n'.format(scanned))
+        buffer.write('*  seen     {} users\n'.format(seen))
+        buffer.write('\n\n')
+        buffer.write('## Reported items per probe\n\n')
+        for probe in sorted(REPORT):
+            buffer.write('*  {}: {}\n'.format(probe,
+                                             len(REPORT[probe]['filename'])))
+        buffer.write('\n\n')
+        buffer.write('## Top 10 violating files\n\n')
+        if format == 'text':
+            buffer.write('   hits     filename\n')
+            buffer.write('   -------- -------------------------------------------\n')
+        for item, count in leaders(flatten([report['filename']
+                                            for report in REPORT.values()])):
+            probes = [x for x in REPORT if item in REPORT[x]['filename']]
+            buffer.write('*  {:<8} {}'.format(count, item))
+            if len(probes) == 1:
+                buffer.write(' ({})\n'.format(probes[0]))
+            else:
+                buffer.write('\n           in probes: {}\n'.format(
+                    ','.join(sorted(probes)
+                )))
+        buffer.write('\n\n')
+        buffer.write('## Top 10 violating users\n\n')
+        if format == 'text':
+            buffer.write('   hits     username\n')
+            buffer.write('   -------- -------------------------------------------\n')
+        for user, count in leaders(flatten([report['uid']
+                                            for report in REPORT.values()])):
+
+            try:
+                name = pwd.getpwuid(user).pw_name
+                name = '{} (uid {})'.format(name, user)
+            except KeyError:
+                name = user
+
+            probes = [x for x in REPORT if user in REPORT[x]['uid']]
+            buffer.write('*  {:<8} {}\n'.format(count, name))
+            buffer.write('   > in probes: {}\n'.format(
+                ','.join(sorted(probes)
+            )))
+        buffer.write('\n\n')
+        buffer.write('# Raw findings\n\n')
+        for line in self.buffer.getvalue().splitlines():
+            buffer.write('    {}\n'.format(line))
+
+        if format == 'html':
+            renderer = markdown.Markdown()
+            print renderer.convert(buffer.getvalue())
 
     def scan(self, path):
         deflate = self.config.getboolean('scanner', 'deflate')
