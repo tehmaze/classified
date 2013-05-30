@@ -383,6 +383,9 @@ class ArchiveFile(File):
                 return self.handle
             except rarfile.BadRarFile:
                 raise Archive.Corrupt(self.path)
+            except rarfile.PasswordRequired, e:
+                logging.info(str(e))
+                raise Archive.Corrupt(self.path)
             except OSError:
                 logging.error('failed to open rar archive, did you install '
                               'the unrar binary?')
@@ -402,6 +405,13 @@ class ArchiveFile(File):
                 self.handle = self.archive.handle.open(self.filename, mode)
                 return self.handle
             except zipfile.BadZipfile:
+                raise Archive.Corrupt(self.path)
+            except RuntimeError, e:
+                error = str(e)
+                if 'password required' in error:
+                    logging.info(error)
+                else:
+                    logging.critical(error)
                 raise Archive.Corrupt(self.path)
 
         else:
