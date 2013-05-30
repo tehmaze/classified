@@ -381,10 +381,8 @@ class ArchiveFile(File):
             try:
                 self.handle = self.archive.handle.open(self.filename, mode)
                 return self.handle
-            except rarfile.BadRarFile:
-                raise Archive.Corrupt(self.path)
-            except rarfile.PasswordRequired, e:
-                logging.info(str(e))
+            except rarfile.Error, e:
+                logging.warning(str(e))
                 raise Archive.Corrupt(self.path)
             except OSError:
                 logging.error('failed to open rar archive, did you install '
@@ -396,7 +394,8 @@ class ArchiveFile(File):
                 self.handle = tarfile.TarFile.fileobject(self.archive.handle,
                     self.member)
                 return self.handle
-            except tarfile.TarError:
+            except tarfile.TarError, e:
+                logging.info(str(e))
                 raise Archive.Corrupt(self.path)
 
         elif isinstance(self.archive.handle, zipfile.ZipFile):
@@ -404,7 +403,8 @@ class ArchiveFile(File):
                 mode = mode.replace('b', '')  # not supported in zip files
                 self.handle = self.archive.handle.open(self.filename, mode)
                 return self.handle
-            except zipfile.BadZipfile:
+            except zipfile.BadZipfile, e:
+                logging.warning(str(e))
                 raise Archive.Corrupt(self.path)
             except RuntimeError, e:
                 error = str(e)
