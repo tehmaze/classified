@@ -93,7 +93,7 @@ limit       = 5
 [probe:password]
 ; Regular expression pattern to look for passwords. The expression must contain
 ; at least the `password` match group.
-pattern     = pass(?:|wd|word)[ \s\t=:]+(?P<password>\S+)\s*(?:['"]|$)
+pattern     = \bpass(?:|wd|word)\b[ \s\t=:]+(?P<password>\S{4,})\s*(?:['"]|$)
 
 
 [probe:pcap]
