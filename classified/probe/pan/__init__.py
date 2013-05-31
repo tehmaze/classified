@@ -200,6 +200,7 @@ class PAN(Probe):
         except self.config.NoOptionError:
             limit = 0
 
+        prev = chr(0)
         for text in item.open():
             line += 1
 
@@ -208,37 +209,43 @@ class PAN(Probe):
                 if char.isdigit():
                     digits.append(int(char))
 
+                    if len(digits) >= digits_max:
+                        digits = digits[1:]
+
+                    if len(digits) >= digits_min:
+                        for x in xrange(digits_min, digits_max + 1):
+                            card_number = ''.join(map(str, digits[:x]))
+                            card_company = self.luhn_check(card_number)
+                            if card_company is not None:
+                                self.report(item,
+                                    raw=text,
+                                    line=line,
+                                    card_number=card_number,
+                                    card_number_masked=mask(card_number),
+                                    company=card_company,
+                                )
+
+                                # Rotate digits
+                                digits = digits[x:]
+
+                                # Keep track of hits
+                                hits += 1
+                                if limit and hits >= limit:
+                                    logging.debug('pan probe hit limit '
+                                                  'of %d' % limit)
+                                    return
+                                break
+
                 # We ignore dashes, new lines and carriage returns
                 elif char in self.ignore:
-                    continue
+                    # .. if we have two successive ignored characters, reset
+                    # the digits array
+                    if prev in self.ignore:
+                        digits = []
 
                 # Otherwise we'll reset the buffer
                 else:
                     digits = []
-                    continue
 
-                if len(digits) >= digits_max:
-                    digits = digits[1:]
-
-                if len(digits) >= digits_min:
-                    for x in xrange(digits_min, digits_max + 1):
-                        card_number = ''.join(map(str, digits[:x]))
-                        card_company = self.luhn_check(card_number)
-                        if card_company is not None:
-                            self.report(item,
-                                raw=text,
-                                line=line,
-                                card_number=card_number,
-                                card_number_masked=mask(card_number),
-                                company=card_company,
-                            )
-
-                            # Rotate digits
-                            digits = digits[x:]
-
-                            # Keep track of hits
-                            hits += 1
-                            if limit and hits >= limit:
-                                logging.debug('pan probe hit limit of %d' % limit)
-                                return
-                            break
+                # Keep track of the previous character
+                prev = char
