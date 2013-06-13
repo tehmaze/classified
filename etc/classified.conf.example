@@ -2,6 +2,12 @@
 ; ---------------------
 ; This section contains general configuration options.
 
+[DEFAULT]
+db_path         = /var/cache/classified
+
+; Scanner configuration
+; ---------------------
+
 [scanner]
 ; Enable deflate. If you enable this, classified will use all available
 ; decompression techniques to descend into (tar/rar/zip) archives and it will
@@ -49,7 +55,7 @@ maxdepth      = -1
 
 [incremental]
 ; Path of the dbm file cache
-database      = /var/cache/classified/incremental.db
+database      = %(db_path)s/incremental.db
 
 ; Checksum algorithm, options are:
 ; *  mtime (do not compare file contents, only mtime)
@@ -93,7 +99,7 @@ limit       = 5
 [probe:password]
 ; Regular expression pattern to look for passwords. The expression must contain
 ; at least the `password` match group.
-pattern     = \bpass(?:|wd|word)\b[ \s\t=:]+(?P<password>\S{4,})\s*(?:['"]|$)
+pattern     = \bpass(?:|wd|word)\b[\s\t=:]+(?P<password>\S{4,})\s*(?:['"]|$)"'])
 
 
 [probe:pcap]
@@ -102,6 +108,26 @@ format      = {filename_relative}[{line:d}]: pcap v{version} ({linktype})
 
 [probe:ssl]
 format      = {filename_relative}[{line:d}]: {username}({uid}:{gid}) {key_info} {key_type}
+
+; Report configurations
+; ---------------------
+
+[report:mail]
+template        = report/full.eml
+server          = localhost
+sender          = {user}@{hostname}
+subject         = Classified report for {hostname}
+
+[report:html]
+template        = report/full.html
+
+[report:syslog]
+syslog_facility = daemon
+format_password = detected password in {filename}[{line:d}] {uid}:{gid} {type} {text_masked}
+format_pan      = detected pan in {filename}[{line:d}] {uid}:{gid} {company} {card_number_masked}
+format_pcap     = detected pcap in {filename} {uid}:{gid} {version} {linktype}
+format_ssl      = detected key in {filename} {uid}:{gid} {key_type} {key_info}
+
 
 
 ; Clean false positives

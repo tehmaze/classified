@@ -5,8 +5,9 @@ IGNORE = dict()
 # Report counters
 REPORT = dict()
 
-def get_probe(name):
+
+def get_probe(name, *args, **kwargs):
     try:
-        return PROBES[name]
+        return PROBES[name](*args, **kwargs)
     except KeyError:
-        raise NotImplementedError
+        raise NotImplementedError(name)

@@ -15,7 +15,7 @@ ext_modules = [
 
 setup(
     name         = 'classified',
-    version      = '0.1.0',
+    version      = '1.0',
     author       = 'Wijnand Modderman',
     author_email = 'maze@pyth0n.org',
     description  = 'Classified data scanner',
@@ -28,7 +28,11 @@ setup(
         'classified.probe.password',
         'classified.probe.pcap',
         'classified.probe.ssl',
+        'classified.report',
     ],
+    package_data = {
+        'classified': ['template/*/*'],
+    },
     data_files   = [
         ('/etc/classified', 'etc/classified.conf.sample'),
     ],

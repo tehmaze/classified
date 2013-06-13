@@ -1,5 +1,4 @@
 # Python imports
-from collections import defaultdict
 import fnmatch
 import grp
 import logging
@@ -11,7 +10,7 @@ import sys
 
 # Project imports
 from classified import checksum
-from classified.probe import PROBES, IGNORE, REPORT
+from classified.probe import PROBES, IGNORE
 
 
 class ProbeTracker(type):
@@ -30,11 +29,10 @@ class Probe(object):
     format = None
     name = None
 
-    def __init__(self, config, buffer=None):
+    def __init__(self, config, report):
         self.config = config
+        self.report = report
         self.name = self.name or self.__class__.__name__.lower()
-        if not self.name in REPORT:
-            REPORT[self.name] = dict(uid=[], filename=[])
 
         # Lookup algorithm for doing checks
         self.algorithm = self.config.getdefault('clean:%s' % self.name,
@@ -125,7 +123,9 @@ class Probe(object):
     def probe(self, item):
         raise NotImplementedError
 
-    def report(self, item, **kwargs):
+    def record(self, item, **kwargs):
+        print 'probe.record', self.name, item, kwargs
+
         # Check if we can/may report this item
         digest, ignore = self.ignore_hash(item, **kwargs)
         if ignore:
@@ -133,7 +133,6 @@ class Probe(object):
 
         # Exend kwargs
         kwargs['hash'] = digest
-        kwargs['probe'] = self.name
         kwargs['filename'] = str(item)
         kwargs['filename_relative'] = str(item).replace(os.getcwd(), '.')
 
@@ -150,11 +149,6 @@ class Probe(object):
         except KeyError:
             kwargs['group'] = str(kwargs['gid'])
 
-        # Retrieve configured format
-        format = self.config.getdefault('probe:%s' % self.name, 'format',
-            self.format) 
-        self.buffer.write('{}\n'.format(format.format(**kwargs)))
-
-        # Keep track of reported items
-        REPORT[self.name]['filename'].append(str(item))
-        REPORT[self.name]['uid'].append(kwargs['uid'])
+        # Send findings to reporting engine
+        print 'sending to', self.report
+        self.report.report(self.name, item, **kwargs)

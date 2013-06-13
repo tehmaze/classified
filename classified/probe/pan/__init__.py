@@ -217,7 +217,7 @@ class PAN(Probe):
                             card_number = ''.join(map(str, digits[:x]))
                             card_company = self.luhn_check(card_number)
                             if card_company is not None:
-                                self.report(item,
+                                self.record(item,
                                     raw=text,
                                     line=line,
                                     card_number=card_number,

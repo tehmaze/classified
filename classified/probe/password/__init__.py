@@ -37,7 +37,7 @@ class Password(Probe):
                     if password == '':
                         continue
 
-                    self.report(item,
+                    self.record(item,
                         raw=text,
                         type='password',
                         line=line,
@@ -55,7 +55,7 @@ class Password(Probe):
             line += 1
             part = text.split(':')
             if len(part) == 5 and part[4]:
-                self.report(item,
+                self.record(item,
                     raw=text,
                     type='pgpass',
                     line=line,

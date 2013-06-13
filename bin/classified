@@ -26,6 +26,8 @@ def run():
         help='Generate a report')
     parser.add_option('-R', '--report-format', default='text',
         help='Report format (default: text, options: html,text)')
+    parser.add_option('-o', '--output', default='',
+        help='Output file for report')
 
     option, args = parser.parse_args()
     if not args:
@@ -51,7 +53,7 @@ def run():
         scanner.scan(os.path.expanduser(path))
 
     if option.report:
-        scanner.report(format=option.report_format)
+        scanner.report.render()
 
 if __name__ == '__main__':
     sys.exit(run())

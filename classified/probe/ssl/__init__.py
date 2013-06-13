@@ -54,11 +54,11 @@ class SSL(Probe):
             mode = info[stat.ST_MODE]
             # Check if file is group or world-readable
             if mode & stat.S_IRGRP or mode & stat.S_IROTH:
-                key_info.append('readable')
+                key_info.append('world-readable')
             else:
                 key_info.append('protected')
 
-            self.report(item,
+            self.record(item,
                 raw=data,
                 line=lineno,
                 key=key,
