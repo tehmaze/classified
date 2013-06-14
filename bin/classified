@@ -24,8 +24,8 @@ def run():
         help='Be incremental (default: do full scan)')
     parser.add_option('-r', '--report', action='store_true', default=False,
         help='Generate a report')
-    parser.add_option('-R', '--report-format', default='text',
-        help='Report format (default: text, options: html,text)')
+    parser.add_option('-R', '--report-format', default='syslog',
+        help='Report format (default: syslog, options: file,html,mail,syslog)')
     parser.add_option('-o', '--output', default='',
         help='Output file for report')
 

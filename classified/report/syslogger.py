@@ -16,10 +16,11 @@ class SyslogReport(Report):
                        facility)
 
     def report(self, probe, item, **kwargs):
-        print 'syslogger.report', probe, item, kwargs
         formatter = self.config.get('report:syslog', 'format_{}'.format(probe))
         message = formatter.format(**kwargs)
-        print 'syslogger.message', message
+        self.emit(message)
+
+    def emit(self, message):
         syslog.syslog(message)
 
     def render(self, *args, **kwargs):

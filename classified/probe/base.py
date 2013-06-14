@@ -124,8 +124,6 @@ class Probe(object):
         raise NotImplementedError
 
     def record(self, item, **kwargs):
-        print 'probe.record', self.name, item, kwargs
-
         # Check if we can/may report this item
         digest, ignore = self.ignore_hash(item, **kwargs)
         if ignore:
@@ -150,5 +148,4 @@ class Probe(object):
             kwargs['group'] = str(kwargs['gid'])
 
         # Send findings to reporting engine
-        print 'sending to', self.report
         self.report.report(self.name, item, **kwargs)

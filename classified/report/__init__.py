@@ -3,7 +3,6 @@ REPORT = dict()
 
 
 def get_report(name, *args, **kwargs):
-    print 'supported', REPORT.keys()
     try:
         return REPORT[name](*args, **kwargs)
     except KeyError:
