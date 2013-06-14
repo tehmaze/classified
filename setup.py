@@ -34,7 +34,7 @@ setup(
         'classified': ['template/*/*'],
     },
     data_files   = [
-        ('/etc/classified', 'etc/classified.conf.sample'),
+        ('/etc/classified', ['etc/classified.conf.example']),
     ],
     scripts      = ['bin/classified'],
     ext_modules  = ext_modules,
