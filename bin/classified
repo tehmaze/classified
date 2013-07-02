@@ -3,6 +3,7 @@
 # Python imports
 import logging
 import os
+import optparse
 import sys
 
 # Project imports
@@ -10,10 +11,29 @@ from classified.config import Config
 from classified.scanner import Scanner
 
 
-def run():
-    import optparse
+class Parser(optparse.OptionParser):
+    def format_epilog(self, formatter):
+        return '''
+Probes:
+  pan                   Personal Account Number data (credit card numbers)
+  password              Password data
+  pcap                  Packet Capture data (as captured by e.g. tcpdump)
+  ssl                   Cryptologic (unprotected) private keys
 
-    parser = optparse.OptionParser(usage='%prog <path[ .. <path>]>')
+Report formats:
+  html                  HTML report *
+  file                  Text report *
+  mail                  Text report suitable for e-mail **
+  tty                   Text report suitable for printing to STDOUT
+  syslog                Text report suitable for per-finding syslog messages
+
+  *                     Requires --output flag with file path
+  **                    Requires --output flag with recipient e-mail address(es)
+'''
+
+
+def run():
+    parser = Parser(usage='%prog <path[ .. <path>]>')
     parser.add_option('-c', '--config', default='',
         help='Configuration file')
     parser.add_option('-i', '--incremental', action='store_true', default=False,
