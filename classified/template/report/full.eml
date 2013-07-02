@@ -1,44 +1,4 @@
 # Report for {{ fqdn }}
 
 
-## Top 10 violating users
-{% if username %}
-  findings username
-  -------- --------------------------------------------------------
-  {% for item in username|dictsort|reverse -%}
-  {% if loop.index < 11 -%}
-  {{ (item[1] | string).ljust(8) }} {{ item[0] }}
-  {% endif -%}
-  {% endfor -%}
-{% else %}
-No users to report.
-{% endif %}
-
-## Top 10 offending files
-{% if filename %}
-  findings filename
-  -------- --------------------------------------------------------
-  {% for item in username|dictsort|reverse -%}
-  {% if loop.index < 11 -%}
-  {{ (item[1] | string).ljust(8) }} {{ item[0] }}
-  {% endif -%}
-  {% endfor -%}
-{% else %}
-No files to report.
-{% endif %}
-
-## Raw findings
-{% for type, items in probe|dictsort -%}
-### Findings for probe {{ type }}
-{% for file, item in items -%}
-  {% if type == 'pan' %}
-  {{ item.filename }}[{{ item.line }}] {{ item.username }} {{ item.company }} {{ item.card_number_masked }}
-  {% elif type == 'password' %}
-  {{ item.filename }}[{{ item.line }}] {{ item.username }} {{ item.type}} {{ item.password_masked }}
-  {% elif type == 'pcap' %}
-  {{ item.filename }} {{ item.username }} {{ item.linktype }} v{{ item.version }}
-  {% elif type == 'ssl' %}
-  {{ item.filename }} {{ item.username }} {{ item.key_type }} {{ item.key_info }}
-  {% endif -%}
-{% endfor %}
-{% endfor -%}
+{% include 'report/full.tty' %}

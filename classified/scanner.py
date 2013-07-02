@@ -1,6 +1,7 @@
 # Python imports
 import fnmatch
 import logging
+import os
 import re
 import datetime
 import traceback
@@ -8,7 +9,7 @@ import StringIO
 
 # Project imports
 from classified.incremental import Incremental
-from classified.meta import Path, CorruptionError
+from classified.meta import Path, File, CorruptionError
 from classified.probe import get_probe
 from classified.report import get_report
 import classified.report.all
@@ -29,19 +30,19 @@ class Scanner(object):
         # Excluded file system types
         try:
             self.exclude_dirs = self.config.getmulti('scanner', 'exclude_dirs')
-        except self.config.NoOptionError:
+        except self.config.Error:
             self.exclude_dirs = []
         try:
             self.exclude_fs = self.config.getmulti('scanner', 'exclude_fs')
-        except self.config.NoOptionError:
+        except self.config.Error:
             self.exclude_fs = []
         try:
             self.exclude_link = self.config.getboolean('scanner', 'exclude_link')
-        except self.config.NoOptionError:
+        except self.config.Error:
             self.exclude_link = True
         try:
             self.exclude_type = self.config.getmulti('scanner', 'exclude_type')
-        except self.config.NoOptionError:
+        except self.config.Error:
             self.exclude_type = []
 
         # Max traversal depths
@@ -49,7 +50,15 @@ class Scanner(object):
         self.maxdepth = int(self.config.getdefault('scanner', 'maxdepth', -1))
 
         # Deflation of archives enabled?
-        self.deflate = self.config.getboolean('scanner', 'deflate')
+        try:
+            self.deflate = self.config.getboolean('scanner', 'deflate')
+        except self.config.Error:
+            self.deflate = True
+
+        try:
+            self.deflate_limit = self.config.getint('scanner', 'deflate_limit')
+        except self.config.Error:
+            self.deflate_limit = 5
 
         # Incremental enabled?
         try:
@@ -57,29 +66,56 @@ class Scanner(object):
                 self.incremental = Incremental(self.config)
             else:
                 self.incremental = False
-        except self.config.NoOptionError:
+        except self.config.Error:
             self.incremental = False
 
         # Report enabled?
-        if option.report:
-            self.report = get_report(self.option.report_format, self.config,
-                                     self.option)
-        else:
-            self.report = get_report('basic', self.config, self.option)
+        self.report = get_report(self.option.report_format, self.config,
+                                 self.option)
 
         # Import probes
-        for option in self.config.getlist('scanner', 'include_probe'):
+        probes = set(self.option.probes.split(','))
+        try:
+            probes.update(self.config.getlist('scanner', 'include_probe'))
+        except self.config.Error:
+            pass
+
+        if 'all' in probes:
+            # Remove it
+            probes.remove('all')
+
+            # Auto load all probe module names
+            import classified.probe.all
+            for probe in classified.probe.all.__all__:
+                probe = getattr(classified.probe.all, probe)
+                probes.add(probe.__module__.split('.')[-1])
+
+        elif not probes:
+            raise TypeError('No probes enabled, check -p')
+
+        modules = {}
+        for probe in probes:
             try:
-                __import__('classified.probe.%s' % option)
+                modules[probe] = __import__('classified.probe.%s' % probe)
             except ImportError, e:
-                raise TypeError('Invalid probe %s enabled: %s' % (option,
+                raise TypeError('Invalid probe %s enabled: %s' % (probe,
                     str(e)))
 
         # Setup probes
         self.probes = {}
-        for option in self.config.options('probe'):
-            pattern = re.compile(fnmatch.translate(option))
-            self.probes[pattern] = self.config.getlist('probe', option)
+        if self.config.has_section('probe'):
+            for option in self.config.options('probe'):
+                pattern = re.compile(fnmatch.translate(option))
+                self.probes[pattern] = self.config.getlist('probe', option)
+
+        else:
+            for name in probes:
+                probe = get_probe(name, self.config, self.report)
+                for option in probe.target:
+                    pattern = re.compile(fnmatch.translate(option))
+                    if pattern not in self.probes:
+                        self.probes[pattern] = []
+                    self.probes[pattern].append(name)
 
     def probe(self, item, name):
         logging.debug('probe %s on %r' % (name, item))
@@ -98,55 +134,56 @@ class Scanner(object):
                 logging.debug(line)
 
     def scan(self, path):
-        deflate = self.config.getboolean('scanner', 'deflate')
-        try:
-            deflate_limit = self.config.getint('scanner', 'deflate_limit')
-        except self.config.NoOptionError:
-            deflate_limit = 0
+        if os.path.isdir(path):
+            for item in Path(path).walk(True, self.deflate, self.deflate_limit):
+                self.scan_item(item)
 
-        for item in Path(path).walk(deflate=deflate, deflate_limit=deflate_limit):
-            if item is None:
-                continue
+        else:
+            self.scan_item(File(path))
 
-            # No readable file? Skip
-            if not item.readable:
-                logging.debug('skipping %s: no readable content' % item)
-                continue
+    def scan_item(self, item):
+        if item is None:
+            return
 
-            # No mime type? Skip
-            elif item.mimetype is None:
-                logging.debug('skipping %s: no mimetype' % item)
-                continue
+        # No readable file? Skip
+        if not item.readable:
+            logging.debug('skipping %s: no readable content' % item)
+            return
 
-            # Mime type exclusions
-            elif item.mimetype in self.exclude_type:
-                logging.debug('skipping %s: mimetype %s excluded' % (item,
-                    item.mimetype))
-                continue
+        # No mime type? Skip
+        elif item.mimetype is None:
+            logging.debug('skipping %s: no mimetype' % item)
+            return
 
-            # File system type exclusions
-            elif item.mount.fs['type'] in self.exclude_fs:
-                logging.info('skipping %s: excluded fs %s' % (item,
-                    item.mount.fs['type']))
-                continue
+        # Mime type exclusions
+        elif item.mimetype in self.exclude_type:
+            logging.debug('skipping %s: mimetype %s excluded' % (item,
+                item.mimetype))
+            return
 
-            elif self.incremental and item in self.incremental:
-                logging.debug('skipping %s: file in incremental cache' % item)
-                continue
+        # File system type exclusions
+        elif item.mount.fs['type'] in self.exclude_fs:
+            logging.info('skipping %s: excluded fs %s' % (item,
+                item.mount.fs['type']))
+            return
 
-            else:
-                logging.debug('scanning %r' % item)
+        elif self.incremental and item in self.incremental:
+            logging.debug('skipping %s: file in incremental cache' % item)
+            return
 
-            success = True
-            for pattern, probes in self.probes.iteritems():
-                if pattern.match(item.mimetype):
-                    for probe in probes:
-                        try:
-                            self.probe(item, probe)
-                        except CorruptionError, e:
-                            logging.error('probe %s on %s failed: %s' % (probe,
-                                item, e))
-                            success = False
+        else:
+            logging.debug('scanning %r' % item)
 
-            if self.incremental and success:
-                self.incremental.add(item)
+        success = True
+        for pattern, probes in self.probes.iteritems():
+            if pattern.match(item.mimetype):
+                for probe in probes:
+                    try:
+                        self.probe(item, probe)
+                    except CorruptionError, e:
+                        logging.error('probe %s on %s failed: %s' % (probe,
+                            item, e))
+                        success = False
+
+        if self.incremental and success:
+            self.incremental.add(item)

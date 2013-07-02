@@ -1,9 +1,11 @@
 # Python imports
-from ConfigParser import ConfigParser, NoOptionError, NoSectionError
+from ConfigParser import ConfigParser, Error, NoOptionError, NoSectionError
+import os
 import re
 
 
 class Config(ConfigParser):
+    Error = Error
     NoOptionError = NoOptionError
     NoSectionError = NoSectionError
 
@@ -11,7 +13,11 @@ class Config(ConfigParser):
 
     def __init__(self, filename, *args, **kwargs):
         ConfigParser.__init__(self, *args, **kwargs)
-        self.read([filename])
+        if filename:
+            if os.access(filename, os.R_OK):
+                self.read([filename])
+            else:
+                raise IOError('Could not open {} for reading'.format(filename))
 
     def getdefault(self, section, option, default=None):
         try:

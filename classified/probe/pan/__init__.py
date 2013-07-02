@@ -102,8 +102,9 @@ class PAN(Probe):
     Scan for Primary Account Number (PAN) data in (text) files.
     '''
 
+    target = ('text/*',)
     format = '{filename}[{line:d}]: {company} {card_number_masked}'
-    ignore = '\x00-:\r\n'
+    ignore = list('\x00-:\r\n')
     _check = {
         'American Express': dict(
             length = [15],
@@ -197,7 +198,7 @@ class PAN(Probe):
         hits = 0
         try:
             limit = self.config.getint('probe:pan', 'limit')
-        except self.config.NoOptionError:
+        except self.config.Error:
             limit = 0
 
         prev = chr(0)

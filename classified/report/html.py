@@ -10,6 +10,7 @@ from classified.report.base import Report
 
 class HTMLReport(Report):
     name = 'html'
+    template = 'report/full.html'
 
     def setup(self):
         if not self.option.output:
@@ -25,8 +26,9 @@ class HTMLReport(Report):
 
         # Load template file
         self.env = Environment(loader=PackageLoader('classified', 'template'))
-        self.filename = self.config.get('report:{}'.format(self.name),
-                                        'template')
+        self.filename = self.config.getdefault('report:{}'.format(self.name),
+                                               'template',
+                                               self.template)
         self.template = self.env.get_template(self.filename)
 
         # Collected entries
@@ -41,7 +43,7 @@ class HTMLReport(Report):
 
 
     def report(self, probe, item, **kwargs):
-        self.entries['probe'][probe].append((item, kwargs))
+        self.entries['probe'][probe.name].append((item, kwargs))
         self.entries['filename'][str(item)] += 1
         if 'username' in kwargs:
             self.entries['username'][kwargs['username']] += 1

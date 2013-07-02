@@ -16,7 +16,11 @@ class SyslogReport(Report):
                        facility)
 
     def report(self, probe, item, **kwargs):
-        formatter = self.config.get('report:syslog', 'format_{}'.format(probe))
+        try:
+            formatter = self.config.get('report:syslog',
+                                        'format_{}'.format(probe.name))
+        except self.config.Error:
+            formatter = probe.format
         message = formatter.format(**kwargs)
         self.emit(message)
 

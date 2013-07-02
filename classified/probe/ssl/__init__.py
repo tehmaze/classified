@@ -6,6 +6,7 @@ from classified.probe.base import Probe
 
 
 class SSL(Probe):
+    target = ('text/*',)
     format = '{filename}[{line:d}]: {key_info} {key_type} {username}'
 
     def probe(self, item):

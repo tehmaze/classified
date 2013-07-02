@@ -26,7 +26,8 @@ class ProbeTracker(type):
 class Probe(object):
     __metaclass__ = ProbeTracker
     default_buffer = sys.stdout
-    format = None
+    target = ()                     # default list of target mime types
+    format = None                   # default format string for reporting
     name = None
 
     def __init__(self, config, report):
@@ -67,6 +68,9 @@ class Probe(object):
             except (self.config.NoOptionError, self.config.NoSectionError):
                 IGNORE[self.name]['hash'] = []
 
+    def __unicode__(self):
+        return self.name
+
     def can_probe(self, item):
         '''
         Tests if this probe can be ran against the given item.
@@ -102,7 +106,9 @@ class Probe(object):
             try:
                 hashing.update(kwargs['raw'])
             except KeyError:
-                raise ValueError('Probe %s does not support line context' % self.name)
+                # The reported item has no "raw" format, therefor we can not
+                # provide a line-based hash
+                return None, False
 
         elif context == 'format':
             format = self.config.get('clean:%s' % self.name, 'format')
@@ -148,4 +154,4 @@ class Probe(object):
             kwargs['group'] = str(kwargs['gid'])
 
         # Send findings to reporting engine
-        self.report.report(self.name, item, **kwargs)
+        self.report.report(self, item, **kwargs)

@@ -1,5 +1,4 @@
 # Python imports
-import os
 import struct
 
 # Project imports 
@@ -8,6 +7,7 @@ from classified.probe.base import Probe
 
 class PCAP(Probe):
     magic = 0xa1b2c3d4
+    target = ('application/octet-stream', 'application/vnd.tcpdump.pcap')
     format = '{filename_relative}[{line:d}]: pcap v{version} ({linktype})'
     header = 'IHHiIII'
     header_size = struct.calcsize(header)

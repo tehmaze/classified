@@ -13,6 +13,7 @@ class MailReport(HTMLReport):
     name = 'mail'
     sender = '{user}@{hostname}'
     subject = 'Classified report for {fqdn}'
+    template = 'report/full.eml'
 
     def setup(self):
         if not self.option.output:

@@ -14,20 +14,28 @@ def run():
     import optparse
 
     parser = optparse.OptionParser(usage='%prog <path[ .. <path>]>')
-    parser.add_option('-q', '--quiet', action='store_true', default=False,
-        help='Be quiet (default: no)')
-    parser.add_option('-v', '--verbose', action='store_true', default=False,
-        help='Be verbose (default: no)')
-    parser.add_option('-c', '--config', default='/etc/classified/classified.conf',
+    parser.add_option('-c', '--config', default='',
         help='Configuration file')
     parser.add_option('-i', '--incremental', action='store_true', default=False,
-        help='Be incremental (default: do full scan)')
-    parser.add_option('-r', '--report', action='store_true', default=False,
+        help='Be incremental (default: no)')
+    parser.add_option('-p', '--probes', default='all',
+        help='Probes to enable, comma separated (default: %default)')
+
+    group = optparse.OptionGroup(parser, 'Reporting options')
+    group.add_option('-r', '--report', action='store_true', default=False,
         help='Generate a report')
-    parser.add_option('-R', '--report-format', default='syslog',
-        help='Report format (default: syslog, options: file,html,mail,syslog)')
-    parser.add_option('-o', '--output', default='',
+    group.add_option('-R', '--report-format', default='syslog',
+        help='Report format (default: %default)')
+    group.add_option('-o', '--output', default='',
         help='Output file for report')
+    parser.add_option_group(group)
+
+    group = optparse.OptionGroup(parser, 'Debug options')
+    group.add_option('-q', '--quiet', action='store_true', default=False,
+        help='Be quiet (default: no)')
+    group.add_option('-v', '--verbose', action='store_true', default=False,
+        help='Be verbose (default: no)')
+    parser.add_option_group(group)
 
     option, args = parser.parse_args()
     if not args:
@@ -42,6 +50,11 @@ def run():
         logging.basicConfig(level=logging.DEBUG)
     else:
         logging.basicConfig(level=logging.ERROR)
+
+    # If no reporting is enabled, print the results on stdout
+    if not option.report:
+        option.report = True
+        option.report_format = 'tty'
 
     config = Config(option.config)
     if option.incremental:

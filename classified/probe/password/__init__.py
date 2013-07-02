@@ -9,6 +9,7 @@ from classified.probe.base import Probe
 
 class Password(Probe):
     default_pattern = r'\bpass(?:|wd|word)\b[ \s\t=:]+(?P<password>.*)'
+    target = ('text/*',)
     format = '{filename_relative}[{line}]: {type} {text_masked}'
 
     def __init__(self, config, *args, **kwargs):
