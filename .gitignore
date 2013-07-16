@@ -4,4 +4,6 @@
 *.swp
 .DS_Store
 /build
+/dist
+/doc/_build
 MANIFEST

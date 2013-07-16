@@ -1,0 +1,50 @@
+Getting started
+===============
+
+
+Using pip
+---------
+
+The easiest way to install classified is to use `pip`_:
+
+.. parsed-literal::
+
+   ~ $ sudo pip install classified
+   Downloading/unpacking classified
+     Downloading classified-|release|.tar.gz
+     Running setup.py egg_info for package classified
+       
+   Installing collected packages: classified
+     Running setup.py install for classified
+       building 'classified._platform' extension
+   
+       changing mode of /usr/bin/classified to 755
+   Successfully installed classified
+   Cleaning up...
+
+
+.. _pip: http://www.pip-installer.org/
+
+
+On Linux, using Debian (wheezy) or Ubuntu
+-----------------------------------------
+
+Firstly, install the required dependancies:
+
+.. parsed-literal::
+
+   ~ $ sudo apt-get install python-magic python-lzma python-jinja2
+   ...
+
+Grab a copy of the ``rarfile`` module from PyPi and install it:
+
+    https://pypi.python.org/pypi/rarfile
+
+Now you can install classified:
+
+.. parsed-literal::
+
+   ~ $ wget https://pypi.python.org/packages/source/c/classified/classified-|release|.tar.gz
+   ~ $ tar -xzf classified-|release|.tar.gz
+   ~ $ cd classified-|release|
+   classified-|release| $ sudo python setup.py install
