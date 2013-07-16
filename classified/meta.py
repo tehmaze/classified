@@ -73,16 +73,28 @@ class Path(object):
     def __str__(self):
         return self.path
 
-    def walk(self, recurse=True, deflate=True, deflate_limit=0):
+    def walk(self, recurse=True, depth=0, max_depth=10,
+             deflate=True, deflate_limit=0):
+
+        logging.debug('%s depth %d/%d' % (self.path, depth, max_depth))
+
         for item in self.walk_tree(deflate, deflate_limit):
             if item is None:
                 continue
 
             else:
                 yield item
+
+                if recurse and (max_depth and depth >= max_depth):
+                    logging.warning('%s max recursion depth' % (self.path,))
+                    continue
+
                 if recurse and item.walkable:
-                    for sub in item.walk():
-                        yield sub
+                    try:
+                        for sub in item.walk(depth=depth + 1, max_depth=max_depth):
+                            yield sub
+                    except (IOError, OSError), error:
+                        logging.error('%s error %s' % (self.path, str(error)))
 
     def walk_tree(self, deflate, deflate_limit):
         if os.access(self.path, os.R_OK):
@@ -290,19 +302,25 @@ class Archive(File):
             self.recursor = self._recursor_zip
             self.handle = zipfile.ZipFile(self.path)
 
-    def _recursor_compressed(self):
+    def _recursor_compressed(self, depth, max_depth):
         yield ArchiveFile(self.path, self)
 
-    def _recursor_rar(self):
+    def _recursor_rar(self, depth, max_depth):
         for item in self.handle.infolist():
+            size = len(item.filename.split(os.sep))
+            if (depth + size - 1) >= max_depth:
+                continue
             full = os.path.join(self.path, item.filename)
             try:
                 yield ArchiveFile(full, self)
             except KeyError:  # File not in archive
                 pass
 
-    def _recursor_tar(self):
+    def _recursor_tar(self, depth, max_depth):
         for item in self.handle.getmembers():
+            size = len(item.name.split(os.sep))
+            if (depth + size - 1) >= max_depth:
+                continue
             full = os.path.join(self.path, item.name)
             if item.type == tarfile.REGTYPE:
                 try:
@@ -310,17 +328,20 @@ class Archive(File):
                 except KeyError:  # File not in archive
                     pass
 
-    def _recursor_zip(self):
+    def _recursor_zip(self, depth, max_depth):
         for item in self.handle.infolist():
+            size = len(item.filename.split(os.sep))
+            if (depth + size - 1) >= max_depth:
+                continue
             full = os.path.join(self.path, item.filename)
             try:
                 yield ArchiveFile(full, self)
             except KeyError:  # File not in archive
                 pass
 
-    def walk(self):
-        if self.walkable:
-            for item in self.recursor():
+    def walk(self, depth=0, max_depth=10):
+        if self.walkable and (not max_depth or depth < max_depth):
+            for item in self.recursor(depth=depth+1, max_depth=max_depth):
                 yield item
 
 
@@ -387,6 +408,10 @@ class ArchiveFile(File):
             except OSError:
                 logging.error('failed to open rar archive, did you install '
                               'the unrar binary?')
+                raise Archive.Corrupt(self.path)
+            except TypeError, e:
+                logging.error('failed to open rar archive, file corrupt? %s'
+                              % str(e))
                 raise Archive.Corrupt(self.path)
 
         elif isinstance(self.archive.handle, tarfile.TarFile):

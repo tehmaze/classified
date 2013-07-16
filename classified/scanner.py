@@ -133,9 +133,10 @@ class Scanner(object):
             for line in buffer.getvalue().splitlines():
                 logging.debug(line)
 
-    def scan(self, path):
+    def scan(self, path, max_depth=10):
         if os.path.isdir(path):
-            for item in Path(path).walk(True, self.deflate, self.deflate_limit):
+            for item in Path(path).walk(True, self.deflate, self.deflate_limit,
+                                        max_depth=max_depth):
                 self.scan_item(item)
 
         else:
