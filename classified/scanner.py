@@ -135,8 +135,10 @@ class Scanner(object):
 
     def scan(self, path, max_depth=10):
         if os.path.isdir(path):
-            for item in Path(path).walk(True, self.deflate, self.deflate_limit,
-                                        max_depth=max_depth):
+            for item in Path(path).walk(recurse=True,
+                                        max_depth=max_depth,
+                                        deflate=self.deflate,
+                                        deflate_limit=self.deflate_limit):
                 self.scan_item(item)
 
         else:
