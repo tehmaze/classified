@@ -20,14 +20,18 @@ class SSL(Probe):
             line = ''
             lineno = 0
             while line == '':
-                data = item.readline()
+                try:
+                    data = item.readline()
+                except Exception, e:
+                    break
+
                 line = data.strip()
                 lineno += 1
                 if data == '':  # EOF?
                     break
 
             if '-----BEGIN RSA PRIVATE KEY-----' in line:
-                key = 'RSA private key'
+                key = 'RSA pri)ate key'
                 key_type = 'rsa'
             elif 'SSH PRIVATE KEY FILE FORMAT 1' in line:
                 key = 'RSA1 private key'
@@ -45,7 +49,10 @@ class SSL(Probe):
             data = ''
             line = ''
             while line == '':
-                data = item.readline()
+                try:
+                    data = item.readline()
+                except Exception, e:
+                    return
                 line = data.strip()
 
             if line.startswith('Proc-Type:') and 'ENCRYPTED' in line:
