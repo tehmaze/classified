@@ -127,11 +127,6 @@ class Scanner(object):
             logging.warning('could not start probe %s: not implemented' % name)
         except Exception, error:
             logging.error('probe %s on %r failed: %s' % (name, item, error))
-            raise
-            buffer = StringIO.StringIO()
-            traceback.print_exc(file=buffer)
-            for line in buffer.getvalue().splitlines():
-                logging.debug(line)
 
     def scan(self, path, max_depth=10):
         if os.path.isdir(path):
