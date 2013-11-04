@@ -2,3 +2,4 @@ python-magic
 rarfile
 backports.lzma
 Jinja2
+sphinx-bootstrap-theme
