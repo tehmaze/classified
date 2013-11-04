@@ -1,0 +1,25 @@
+Probes
+======
+
+
+Configuration
+-------------
+
+The ``[probe]`` section is a mapping between mime type mappings (globs) and
+probes. The probes themselves have a per-probe configuration section,
+identified as ``[probe:<name>]``. See the probe documentation for possible
+configration options.
+
+
+Available probes
+----------------
+
+Documentation on probes:
+
+.. toctree::
+   :maxdepth: 2
+
+   pan
+   password
+   pcap
+   ssl

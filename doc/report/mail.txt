@@ -1,0 +1,21 @@
+Report: Mail
+============
+
+The report collects all the results in a single e-mail. The page uses a
+`Jinja2 <http://jinja.pocoo.org/>`_ template, which can be overridden.
+
+
+Configuration
+-------------
+
+``sender``
+  Envelope sender.
+
+``server``
+  Address or hostname of the SMTP server.
+
+``subject``
+  Subject of the message.
+
+``template``
+  Path to the template file.

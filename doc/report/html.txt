@@ -1,0 +1,12 @@
+Report: HTML
+============
+
+The report collects all the results in a single HTML page. The page uses a
+`Jinja2 <http://jinja.pocoo.org/>`_ template, which can be overridden.
+
+
+Configuration
+-------------
+
+``template``
+  Path to the template file.

@@ -1,0 +1,150 @@
+Scanner configuration
+=====================
+
+The scanner takes care of running the actual probes. Below is an except of the
+relavant configuration bits, that has per-section inline explanations::
+
+    [scanner]
+    ; Enable deflate. If you enable this, classified will use all available
+    ; decompression techniques to descend into (tar/rar/zip) archives and it will
+    ; transparently decompress files. Note that this highly depends on the
+    ; availability of optionally installed decompression modules for Python.
+    deflate       = yes
+    ; Deflate size limit (in bytes)
+    deflate_limit = 104857600
+
+    ; Enabled probe types
+    include_probe = pan, password, pcap, ssl
+
+    ; Exclude symlinks
+    exclude_link  = no
+
+    ; Excluded directory names
+    ;exclude_dirs  = .bzr, .cdv, .git, .hg, .svn
+
+    ; Excluded file system types
+    exclude_fs    = binfmt_misc
+                    devfs
+                    devpts
+                    fuse
+                    nfs
+                    proc
+                    rpc_pipefs
+                    sysfs
+                    usbfs
+
+    ; Excluded mime types
+    exclude_type  = application/x-rpm
+                    application/x-dosexec
+                    application/x-executable
+                    application/x-not-regular-file
+
+    mindepth      = -1
+    maxdepth      = -1
+
+    ; If enabled, only scan files that have changed
+    ;incremental  = yes
+
+
+Incremental
+-----------
+
+The scanner allows you to run in incremental mode, skipping files that have
+been scanned previously::
+
+    ; Incremental configuration
+    ; -------------------------
+
+    [incremental]
+    ; Path of the dbm file cache
+    database      = %(db_path)s/incremental.db
+
+    ; Checksum algorithm, options are:
+    ; *  mtime (do not compare file contents, only mtime)
+    ; *  adler32
+    ; *  crc32
+    ; *  md5
+    ; *  sha1
+    ; *  sha224
+    ; *  sha256
+    ; *  sha384
+    ; *  sha512
+    ; *  ... and all algorithms your OpenSSL library might offer
+    algorithm     = sha1
+
+
+
+Clean false positives
+---------------------
+
+You can specify a clean section per probe, to skip false positives. You can do
+this by either specifying checksums for files to skip, or you can skip file
+name patterns using globs::
+
+    [clean]
+    ; Checksum algorithm, options are:
+    ; *  adler32
+    ; *  crc32
+    ; *  md5
+    ; *  sha1
+    ; *  sha224
+    ; *  sha256
+    ; *  sha384
+    ; *  sha512
+    ; *  ... and all algorithms your OpenSSL library might offer
+    algorithm   = sha1
+
+    ; Check context, options are:
+    ; *  file   checksum the whole file
+    ; *  line   checksum the matching line
+    ; *  format checksum the formatted result, requires 'format' to be set
+    context     = line
+
+    [clean:pan]
+    algorithm   = sha1
+    context     = line
+    ignore_hash = 00000000  # Test hash
+                  12345678  # Test hash
+                  affe094e  # Found in testdata/pan.txt
+                  ffffffff  # Test hash
+    ignore_hash = # The following SHA1 checksums appear in the (Debian)
+                  # openssh-blacklist package and are false positives
+                  25aafa4ee3132e56cc546bea0978408adcf93e4b  # blacklist.RSA-4096
+                  385fbbe7ed554bc62fc26880d657584f679595fc  # blacklist.DSA-1024
+                  513f8822b16bbb5e0761d241d9f8dd5be25dd686  # blacklist.RSA-4096
+                  5f7de0813134057412ad8e3210a447310c49d0cd  # blacklist.RSA-2048
+                  5fa84fb55b7c3670b7117763858f21e89aabfb3a  # blacklist.DSA-1024
+                  6291e6fd865ed2518138c1bef4fdee5d354f735e  # blacklist.DSA-1024
+                  7cb6ac88eb2d3022e4ad4d6c29b5649e86c3c927  # blacklist.RSA-4096
+                  8abea0ce82f30ec53c4b71fe6b623790e58b9714  # blacklist.RSA-2048
+                  8ebc560b38f3f49d34fac44c23a6840b4c9ad45a  # blacklist.RSA-1024
+                  989288e4e077043545f7c5a6e3bc1c9fd29cdd42  # blacklist.DSA-1024
+                  9d30bee3aa225289187e56e92f2b830b891680ca  # blacklist.RSA-1024
+                  a4913bdef39174229f749b835e29d9ccff0003af  # blacklist.RSA-2048
+                  a5e3cc59ac5759aba8b29e1ffca9c49979d505cf  # blacklist.RSA-2048
+                  a908941f167a2ec96a56784d9dc6eb71d3705aaa  # blacklist.RSA-4096
+                  e2cbb90c60d7d2b61c34b9e43f9fb7ba9ea603d4  # blacklist.DSA-1024
+                  e9e17d0c00992e7418c9491dd5669f364c55ebb9  # blacklist.RSA-1024
+                  edf70456d1f98bb30e62713f3669afbb21421ffb  # blacklist.RSA-4096
+                  f3a17cd5676efcdf5755519a1253b469a4f2132b  # blacklist.RSA-2048
+                  f71117a3513a7b59b1024675f808bf6bd0416cf7  # blacklist.RSA-1024
+                  824248e0f8c50bf57ebe587f66c4347f6220de28  # blacklist.RSA-1024
+
+    [clean:pcap]
+    context     = file
+
+    [clean:ssl]
+    algorithm   = sha1
+    context     = file
+    ignore_name = /etc/ssl/private/*                        # Debian
+                  /etc/ssl/certs/*                          # Red Hat
+    ignore_hash = 0000000000000000000000000000000000000000  # Test hash
+                  c7f8cfcd962fc09c653555723639feacdc9c0ced  # Found in testdata/key-dsa
+                  ffffffffffffffffffffffffffffffffffffffff  # Test hash
+
+    [clean:password]
+    ignore_name = /etc/*
+                  /usr/local/etc/*
+    ignore_hash = 0000000000000000000000000000000000000000  # Test hash
+                  23a7753c047eebdc57c2927856ae497c7655d240  # Found in testdata/.pgpass
+                  ffffffffffffffffffffffffffffffffffffffff  # Test hash

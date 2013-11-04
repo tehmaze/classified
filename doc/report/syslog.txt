@@ -1,0 +1,15 @@
+Report: Syslog
+==============
+
+The report collects all the results to syslog as they come in. You can specify
+a report format per probe. See the example configuration for examples.
+
+
+Configuration
+-------------
+
+``format_*``
+  Per-probe format strings.
+
+``syslog_facility``
+  Syslog facility, see syslog(3) for more information.

@@ -1,0 +1,45 @@
+Reports
+=======
+
+There are several reporting options available. The report format is chosen as a
+command line option, see the report modules documentation below for more
+information.
+
+
+Variables
+---------
+
+The templates use `Jinja2 <http://jinja.pocoo.org/>`_ formatting, the report
+engine has globally available variables. The probes may also export
+probe-specific variables.
+
+``fqdn``
+  Full qualified domain name of the system.
+
+``filename``
+  Filenames discovered in all the probes.
+
+``hostname``
+  Hostname of the system.
+
+``user``
+  The name of the effective user identifier (euid).
+
+``username``
+  Usernames discovered in all the probes.
+
+``probe``
+  Iterable results from the probes.
+
+
+Available reports
+-----------------
+
+Documentation on probes:
+
+.. toctree::
+   :maxdepth: 2
+
+   html
+   mail
+   syslog

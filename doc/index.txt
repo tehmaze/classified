@@ -3,15 +3,50 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to Classified's documentation!
-======================================
+Classified data scanner
+=======================
 
-Contents:
+Classified is a fast forensic tool that aids in scanning for sensitive data,
+such as unencrypted PAN (Primary Account Number) data, passwords, network
+traffic dumps, and so on. You can use this utility to assist in getting and
+maintaining PCI DSS compliance.
+
+
+Requirements
+------------
+
+Classified is suitable for Python 2.6 - Python 2.7. With little effort it could
+be ported to Python 3.x as well.
+
+Required:
+
+* `Python 2.6 - 2.7 <http://python.org/>`_
+* `python-magic <http://pypi.python.org/pypi/python-magic>`_, for mime type detection
+
+The current reporting code will not work on Python version 2.4 or 2.5, because
+we rely on `PEP 3101 <http://www.python.org/dev/peps/pep-3101/>`_ compatible
+string formatting.
+
+
+Requirements (optional)
+-----------------------
+
+Optionally, install:
+
+* `backports.lzma <http://pypi.python.org/pypi/backports.lzma>`_, to inspect LZMA compressed files and archives
+* `rarfile <http://pypi.python.org/pypi/rarfile>`_, to inspect RAR archives
+
+
+Table Of Contents
+-----------------
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    getting_started
+   probe/index
+   report/index
+   scanner
 
 
 
