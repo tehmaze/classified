@@ -75,7 +75,10 @@ class Probe(object):
         '''
         Tests if this probe can be ran against the given item.
         '''
-        return not self.ignore_name(item)
+        ignored = self.ignore_name(item)
+        if ignored:
+            logging.debug('ignoring %r in %s: in ignore_name' % (item, self.name))
+        return not ignored
 
     def ignore_name(self, item):
         '''
