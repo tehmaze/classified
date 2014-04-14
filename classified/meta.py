@@ -197,9 +197,7 @@ class File(Path):
         if not hasattr(self, '_mimetype'):
             try:
                 self._mimetype = magic.from_file(self.path, mime=True)
-            except AttributeError:  # No magic module available
-                self._mimetype = None
-            except IOError:
+            except:
                 self._mimetype = None
         return self._mimetype
 
