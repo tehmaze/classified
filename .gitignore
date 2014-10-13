@@ -2,6 +2,7 @@
 *.pyc
 *.pyo
 *.swp
+*.so
 .DS_Store
 /build
 /dist

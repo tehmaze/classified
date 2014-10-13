@@ -19,7 +19,7 @@ Documentation on probes:
 .. toctree::
    :maxdepth: 2
 
-   pan
-   password
-   pcap
-   ssl
+   probe/pan
+   probe/password
+   probe/pcap
+   probe/ssl

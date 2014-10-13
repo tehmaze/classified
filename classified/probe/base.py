@@ -49,6 +49,14 @@ class Probe(object):
         if self.name not in IGNORE:
             IGNORE[self.name] = dict(name=[], hash=[])
 
+            # Ignored hashes
+            try:
+                ignore_hash = self.config.getmulti('clean:%s' % self.name,
+                    'ignore_hash')
+                IGNORE[self.name]['hash'] = ignore_hash
+            except (self.config.NoOptionError, self.config.NoSectionError):
+                IGNORE[self.name]['hash'] = []
+
             # Ignored names
             try:
                 ignore_name = self.config.getmulti('clean:%s' % self.name,
@@ -60,13 +68,18 @@ class Probe(object):
             except (self.config.NoOptionError, self.config.NoSectionError):
                 IGNORE[self.name]['name'] = []
 
-            # Ignored hashes
+            # Ignored repos
             try:
-                ignore_hash = self.config.getmulti('clean:%s' % self.name,
-                    'ignore_hash')
-                IGNORE[self.name]['hash'] = ignore_hash
+                ignore_repo = self.config.getmulti('clean:%s' % self.name,
+                    'ignore_repo')
+                IGNORE[self.name]['repo'] = []
+                for ignore in ignore_repo:
+                    repo_type, pattern = ignore.split(':', 1)
+                    IGNORE[self.name]['repo'].append((
+                        repo_type, re.compile(fnmatch.translate(pattern))
+                    ))
             except (self.config.NoOptionError, self.config.NoSectionError):
-                IGNORE[self.name]['hash'] = []
+                IGNORE[self.name]['repo'] = []
 
     def __unicode__(self):
         return self.name
@@ -75,19 +88,15 @@ class Probe(object):
         '''
         Tests if this probe can be ran against the given item.
         '''
-        ignored = self.ignore_name(item)
-        if ignored:
-            logging.debug('ignoring %r in %s: in ignore_name' % (item, self.name))
-        return not ignored
+        for hook in (self.ignore_name, self.ignore_repo):
+            if hook(item):
+                logging.debug('ignoring %r in %s: in %s' % (
+                    item, self.name, hook.__name__
+                ))
+                return False
 
-    def ignore_name(self, item):
-        '''
-        Check if the full path is to be ignored by this type of probe.
-        '''
-        for pattern in IGNORE[self.name]['name']:
-            if pattern.match(str(item)):
-                return True
-        return False
+        # We're good, file is not ignored
+        return True
 
     def ignore_hash(self, item, **kwargs):
         '''
@@ -128,6 +137,30 @@ class Probe(object):
         else:
             logging.debug('allowing %r in %s: %s' % (item, self.name, digest))
             return digest, False
+
+    def ignore_name(self, item):
+        '''
+        Check if the full path is to be ignored by this type of probe.
+        '''
+        for pattern in IGNORE[self.name]['name']:
+            if pattern.match(str(item)):
+                return True
+        return False
+
+    def ignore_repo(self, item):
+        '''
+        Check if the full path is to be ignored by this type of probe.
+        '''
+        if item.repository.type is None:
+            return False
+
+        for repository_type, pattern in IGNORE[self.name]['repo']:
+            if repository_type not in (item.repository.type, 'any'):
+                continue
+            if pattern.match(str(item)):
+                return True
+
+        return False
 
     def probe(self, item):
         raise NotImplementedError

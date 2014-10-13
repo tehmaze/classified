@@ -40,3 +40,11 @@ class Config(ConfigParser):
             item = self.re_padding.sub('', item)
             multi.append(item)
         return multi
+
+    def read(self, filename):
+        if isinstance(filename, (list, tuple)):
+            self.filename = filename[0]
+        else:
+            self.filename = filename
+
+        ConfigParser.read(self, filename)

@@ -15,7 +15,7 @@ ext_modules = [
 
 setup(
     name         = 'classified',
-    version      = '1.2.4',
+    version      = '1.3.0',
     author       = 'Wijnand Modderman',
     author_email = 'maze@pyth0n.org',
     description  = 'Classified data scanner',

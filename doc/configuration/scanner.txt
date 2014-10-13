@@ -1,0 +1,224 @@
+Scanner configuration
+=====================
+
+The scanner takes care of running the actual probes.
+
+Scanner options
+---------------
+
+These options are configurable under the ``[scanner]`` configuration section.
+
+.. envvar:: scanner.deflate
+
+If enabled, the scanner will use all available decompression techniques to
+descend into (tar, rar, zip) archives. It will transparently decompress files.
+
+.. note::
+
+    This functionality highly depends on the availability of optionally
+    installed decompression libraries for Python.
+
+.. envvar:: scanner.deflate_limit
+
+Size limit for archived files (in bytes).
+
+.. envvar:: scanner.include_probes
+
+List of enable probe types.
+
+.. envvar:: scanner.exclude_link
+
+If enabled, symlinks will be ignored globally.
+
+.. envvar:: scanner.exclude_dirs
+
+List of excluded directory names. The directory name can be either a full path
+or a glob.
+
+Example::
+
+    [scanner]
+    exclude_dirs = /tmp
+                   /home/*/tmp
+
+.. envvar:: scanner.exclude_fs
+
+List of excluded file system types. The file system type can be a glob.
+
+Example::
+
+    [scanner]
+    exclude_fs = tmpfs
+                 ext?fs
+
+.. envvar:: scanner.exclude_type
+
+List of excluded mime types. This mime type can be a glob.
+
+Example::
+
+    [scanner]
+    exclude_type = text/html
+                   application/*
+
+.. envvar:: scanner.mindepth
+
+Minimal file system recursion depth, set to ``-1`` to disable.
+
+.. envvar:: scanner.maxdepth
+
+Maximal file system recursion depth, set to ``-1`` to disable.
+
+.. envvar:: scanner.incremental
+
+If enabled, only scan files that have changed. See below for the incremental
+configuration.
+
+
+.. _incremental:
+
+Incremental
+-----------
+
+These options are configurable under the ``[incremental]`` configuration
+section.
+
+The scanner allows you to run in incremental mode, skipping files that have
+been scanned previously:
+
+.. envvar:: incremental.database
+
+Path to the dbm cache files.
+
+Example::
+
+    [incremental]
+    database = %(db_path)s/incremental.db
+
+.. envvar:: incremental.algorithm
+
+Selected checksum algorithm, available options are:
+
+============= =================================================================
+Algorithm     Description
+============= =================================================================
+``mtime``     Do not compare file contents, use the file modification time.
+``adler32``   Adler-32 checksum algorithm, 16 bit.
+``crc32``     Cyclic Redundancy Check, 32 bit.
+``md5``       MD5 Message Digest, 128 bit.
+``sha1``      SHA-1 Cryptographic Hash, 160 bit.
+``sha224``    SHA-2 Cryptographic Hash, 224 bit.
+``sha256``    SHA-2 Cryptographic Hash, 256 bit.
+``sha384``    SHA-2 Cryptographic Hash, 384 bit.
+``sha512``    SHA-2 Cryptographic Hash, 512 bit.
+============= =================================================================
+
+
+Clean false positives
+---------------------
+
+These options are configurable under the ``[clean]`` configuration section.
+
+You can specify a clean section per probe, to skip false positives. You can do
+this by either specifying checksums for files to skip, or you can skip file
+name patterns using globs.
+
+.. envvar:: clean.algorithm
+
+Default checksum algorithm used by the clean operations. Used if the
+probe-specific section has no algorithm configured.S see
+:envvar:`incremental.algorithm` for an overview of available algorithms.
+
+.. envvar:: clean.context
+
+Default context to use for specifying clean operations, valid options are:
+
+========== ====================================================================
+Option     Description
+========== ====================================================================
+``file``   Checksum the whole file.
+``line``   Checksum the matching line.
+``format`` Checksum the formatted result, requires :envvar:`clean.format` to be
+           set.
+========== ====================================================================
+
+.. envvar:: clean.*.ignore_hash
+
+Ignores content from the configured :envvar:`clean.context` that matches the
+checksum configured in :envvar:`clean.algorithm`.
+
+.. envvar:: clean.*.ignore_name
+
+Ignores filenames that match the list of path globs.
+
+.. envvar:: clean.*.ignore_repo
+
+Ignores files that are stored in a version control repository. This is a list
+of key-value pairs, stored as ``repository_type:path glob``. Supported
+repository types are:
+
+============= =================================================================
+Type          Description
+============= =================================================================
+``arch``      GNU Arch repository.
+``bzr``       Bazaar repository.
+``cvs``       CVS or CVSINFO repository.
+``darcs``     DARCS repository.
+``git``       Git repository or bare repository.
+``hg``        Mercurial repository.
+``monontone`` Monotone repository.
+``rcs``       RCS repository.
+``svn``       Subversion repository or subversion checkout.
+============= =================================================================
+
+
+Example
+-------
+
+An example configuration for per-probe clean operations may be as follows::
+
+    [clean:pan]
+    algorithm   = sha1
+    context     = line
+    ignore_hash = # The following SHA1 checksums appear in the (Debian)
+                  # openssh-blacklist package and are false positives
+                  25aafa4ee3132e56cc546bea0978408adcf93e4b  # blacklist.RSA-4096
+                  385fbbe7ed554bc62fc26880d657584f679595fc  # blacklist.DSA-1024
+                  513f8822b16bbb5e0761d241d9f8dd5be25dd686  # blacklist.RSA-4096
+                  5f7de0813134057412ad8e3210a447310c49d0cd  # blacklist.RSA-2048
+                  5fa84fb55b7c3670b7117763858f21e89aabfb3a  # blacklist.DSA-1024
+                  6291e6fd865ed2518138c1bef4fdee5d354f735e  # blacklist.DSA-1024
+                  7cb6ac88eb2d3022e4ad4d6c29b5649e86c3c927  # blacklist.RSA-4096
+                  8abea0ce82f30ec53c4b71fe6b623790e58b9714  # blacklist.RSA-2048
+                  8ebc560b38f3f49d34fac44c23a6840b4c9ad45a  # blacklist.RSA-1024
+                  989288e4e077043545f7c5a6e3bc1c9fd29cdd42  # blacklist.DSA-1024
+                  9d30bee3aa225289187e56e92f2b830b891680ca  # blacklist.RSA-1024
+                  a4913bdef39174229f749b835e29d9ccff0003af  # blacklist.RSA-2048
+                  a5e3cc59ac5759aba8b29e1ffca9c49979d505cf  # blacklist.RSA-2048
+                  a908941f167a2ec96a56784d9dc6eb71d3705aaa  # blacklist.RSA-4096
+                  e2cbb90c60d7d2b61c34b9e43f9fb7ba9ea603d4  # blacklist.DSA-1024
+                  e9e17d0c00992e7418c9491dd5669f364c55ebb9  # blacklist.RSA-1024
+                  edf70456d1f98bb30e62713f3669afbb21421ffb  # blacklist.RSA-4096
+                  f3a17cd5676efcdf5755519a1253b469a4f2132b  # blacklist.RSA-2048
+                  f71117a3513a7b59b1024675f808bf6bd0416cf7  # blacklist.RSA-1024
+                  824248e0f8c50bf57ebe587f66c4347f6220de28  # blacklist.RSA-1024
+
+    [clean:pcap]
+    context     = file
+
+    [clean:ssl]
+    algorithm   = sha1
+    context     = file
+    ignore_name = /etc/ssl/private/*                        # Debian
+                  /etc/ssl/certs/*                          # Red Hat
+    ignore_hash = 0000000000000000000000000000000000000000  # Test hash
+                  c7f8cfcd962fc09c653555723639feacdc9c0ced  # Found in testdata/key-dsa
+                  ffffffffffffffffffffffffffffffffffffffff  # Test hash
+
+    [clean:password]
+    ignore_name = /etc/*
+                  /usr/local/etc/*
+    ignore_hash = 0000000000000000000000000000000000000000  # Test hash
+                  23a7753c047eebdc57c2927856ae497c7655d240  # Found in testdata/.pgpass
+                  ffffffffffffffffffffffffffffffffffffffff  # Test hash
+    ignore_repo = git:/usr/local/git/*

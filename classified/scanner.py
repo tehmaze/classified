@@ -28,22 +28,57 @@ class Scanner(object):
         self.started = datetime.datetime.now()
 
         # Excluded file system types
+        self.exclude_dirs = []
         try:
             self.exclude_dirs = self.config.getmulti('scanner', 'exclude_dirs')
         except self.config.Error:
-            self.exclude_dirs = []
+            pass
+
+        self.exclude_fs = []
         try:
             self.exclude_fs = self.config.getmulti('scanner', 'exclude_fs')
+            self.exclude_fs = map(
+                lambda pattern: re.compile(fnmatch.translate(pattern)),
+                self.exclude_fs
+            )
         except self.config.Error:
-            self.exclude_fs = []
+            pass
+
+        self.exclude_link = True
         try:
             self.exclude_link = self.config.getboolean('scanner', 'exclude_link')
         except self.config.Error:
-            self.exclude_link = True
+            pass
+
+        self.exclude_type = []
         try:
             self.exclude_type = self.config.getmulti('scanner', 'exclude_type')
+            self.exclude_type = map(
+                lambda pattern: re.compile(fnmatch.translate(pattern)),
+                self.exclude_type
+            )
         except self.config.Error:
-            self.exclude_type = []
+            pass
+
+        self.exclude_repo = {}
+        try:
+            for item in self.config.getmulti('scanner', 'exclude_repo'):
+                try:
+                    repository_type, pattern = item.split(':', 1)
+                except ValueError:
+                    logging.error(
+                        '%s: exclude_repo must have format "type:path"' % (
+                            self.config.filename,
+                        )
+                    )
+                    raise
+                if repository_type not in self.exclude_repo:
+                    self.exclude_repo[repository_type] = []
+                self.exclude_repo[repository_type].append(re.compile(
+                    fnmatch.translate(pattern)
+                ))
+        except self.config.Error:
+            pass
 
         # Max traversal depths
         self.mindepth = int(self.config.getdefault('scanner', 'mindepth', -1))
@@ -130,11 +165,14 @@ class Scanner(object):
 
     def scan(self, path, max_depth=10):
         if os.path.isdir(path):
-            for item in Path(path).walk(recurse=True,
-                                        max_depth=max_depth,
-                                        deflate=self.deflate,
-                                        deflate_limit=self.deflate_limit):
-                self.scan_item(item)
+            for item in Path(path).walk(
+                    recurse=True,
+                    max_depth=max_depth,
+                    deflate=self.deflate,
+                    deflate_limit=self.deflate_limit,
+                ):
+                if self.scan_item(item) is StopIteration:
+                    break
 
         else:
             self.scan_item(File(path))
@@ -154,15 +192,21 @@ class Scanner(object):
             return
 
         # Mime type exclusions
-        elif item.mimetype in self.exclude_type:
-            logging.debug('skipping %s: mimetype %s excluded' % (item,
+        elif self.test_exclude_mimetype(item):
+            logging.debug('skipping %s: excluded %s mime type' % (item,
                 item.mimetype))
             return
 
         # File system type exclusions
-        elif item.mount.fs['type'] in self.exclude_fs:
-            logging.info('skipping %s: excluded fs %s' % (item,
+        elif self.test_exclude_fs(item):
+            logging.info('skipping %s: excluded %s filesystem' % (item,
                 item.mount.fs['type']))
+            return
+
+        # Repository exclusions
+        elif self.test_exclude_repo(item):
+            logging.debug('skipping %s: excluded %s repository' % (item,
+                item.repository.type))
             return
 
         elif self.incremental and item in self.incremental:
@@ -185,3 +229,19 @@ class Scanner(object):
 
         if self.incremental and success:
             self.incremental.add(item)
+
+    def test_exclude_fs(self, item):
+        return item.mount.fs['type'] in self.exclude_fs
+
+    def test_exclude_mimetype(self, item):
+        return item.mimetype in self.exclude_type
+
+    def test_exclude_repo(self, item):
+        if item.repository.type is not None:
+            for repository_type in (item.repository.type, 'any'):
+                if repository_type in self.exclude_repo:
+                    for pattern in self.exclude_repo[repository_type]:
+                        if pattern.match(str(item)):
+                            return True
+
+        return False

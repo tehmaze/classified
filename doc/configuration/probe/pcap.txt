@@ -1,0 +1,28 @@
+Probe: Packet Capture files (PCAP)
+==================================
+
+
+About
+-----
+
+This probe may identify pcap dump files.
+
+
+
+Configuration
+-------------
+
+.. envvar:: probe.pcap.format
+
+Default reporting format. Available options:
+
+===================== =========================================================
+Option                Description
+===================== =========================================================
+``filename``          Full path to the file.
+``filename_relative`` Path to the file relative to the current working
+                      directory.
+``linktype``          Link type of the packet capture file.
+``line``              Line number of find.
+``version``           Packet capture file version.
+===================== =========================================================

@@ -12,11 +12,6 @@ import warnings
 
 # Third party imports
 try:
-    import magic
-except ImportError:
-    magic = None  # pyflakes.ignore
-    warnings.warn('Could not import required python-magic module')
-try:
     import lzma
 except ImportError:
     try:
@@ -30,6 +25,13 @@ except ImportError:
     rarfile = None
     warnings.warn('Could not import optional rarfile module')
 
+# Project imports
+try:
+    from classified import magic
+except ImportError:
+    magic = None  # pyflakes.ignore
+    warnings.warn('Could not import required python-magic module')
+    raise
 # Project imports (platform dependant)
 from classified.platform import get_filesystem, get_filesystems
 
@@ -39,8 +41,9 @@ class CorruptionError(ValueError):
 
 
 class Path(object):
-    def __init__(self, path):
+    def __init__(self, path, parent=None):
         self.path = os.path.abspath(path)
+        self.parent = parent
 
         # Flags used by recursor
         self.walkable = True
@@ -73,6 +76,17 @@ class Path(object):
     def __str__(self):
         return self.path
 
+    def probe(cls, path):
+        try:
+            fileinfo = os.stat(path)
+            filemode = fileinfo[stat.ST_MODE]
+        except (IOError, OSError):
+            return False
+        else:
+            return stat.S_ISDIR(filemode)
+
+    probe = classmethod(probe)
+
     def walk(self, recurse=True, depth=0, max_depth=10,
              deflate=True, deflate_limit=0):
 
@@ -100,23 +114,128 @@ class Path(object):
         if os.access(self.path, os.R_OK):
             for item in os.listdir(self.path):
                 full = os.path.join(self.path, item)
-                if os.path.isdir(full):
-                    yield Path(full)
+                if Path.probe(full):
+                    yield Path(full, parent=self)
                 else:
                     mount_hint = getattr(self, '_mount', None)
-                    yield File.maybe(full,
+                    yield File.maybe(
+                        full,
                         deflate_if_archive=deflate,
                         deflate_limit=deflate_limit,
-                        mount_hint=mount_hint)
+                        mount_hint=mount_hint,
+                        parent=self,
+                    )
         else:
             logging.error('%s not accessible, skipping' % (self.path,))
+
+
+class Repository(Path):
+    supported_types = {
+        # GNU Arch
+        'arch': (
+            ('file', os.path.join('{arch}', '.arch-project-tree')),
+        ),
+        # Bazaar
+        'bzr': (
+            ('path', os.path.join('.bzr', 'repository')),
+        ),
+        # Concurrent Versions System
+        'cvs': (
+            ('path', 'CVS'),
+            ('path', 'CVSROOT'),
+        ),
+        # DARCS
+        'darcs': (
+            ('path', os.path.join('_darcs', 'pristine.hashed')),
+        ),
+        # Git SCM
+        'git': (
+            ('path', os.path.join('.git', 'objects')),      # repository
+            ('path', os.path.join('refs', 'heads')),        # bare repository
+        ),
+        # Mercurial
+        'hg': (
+            ('path', os.path.join('.hg', 'store')),
+        ),
+        # Monotone
+        'monotone': (
+            ('file', os.path.join('_MTN', 'format')),
+        ),
+        # Revision Control System
+        'rcs': (
+            ('path', 'RCS'),
+        ),
+        # Subversion (SVN)
+        'svn': (
+            ('file', os.path.join('.svn', 'format')),   # repository (checkout)
+            ('path', os.path.join('db', 'revs')),       # repository
+        ),
+    }
+    type_cache = {}
+
+    def __init__(self, path):
+        super(Repository, self).__init__(path)
+        self.type = self._detect_type()
+
+    def _detect_type(self):
+        node = self
+        while node is not None:
+            # This only works for directories
+            if not isinstance(node, Path):
+                node = node.parent or Path(os.path.dirname(node.path))
+            try:
+                return Repository.type_cache[node.path]
+            except KeyError:
+                repository_type = self._detect_type_path(node.path)
+
+            if repository_type is None:
+                if node.parent is None:
+                    path = os.path.dirname(node.path)
+                    # Stop iterating if we hit the file system root
+                    if path != node.path and os.path.isdir(path):
+                        node = Path(path)
+                    else:
+                        node = None
+                else:
+                    node = node.parent
+            else:
+                Repository.type_cache[node.path] = repository_type
+                return repository_type
+
+    def _detect_type_path(self, path):
+        for vendor, probes in self.supported_types.iteritems():
+            for filetype, filename in probes:
+                filepath = os.path.join(path, filename)
+                try:
+                    fileinfo = os.stat(filepath)
+                    filemode = fileinfo[stat.ST_MODE]
+                except (IOError, OSError):
+                    continue
+
+                # Common types
+                if filetype == 'path' and stat.S_ISDIR(filemode):
+                    return vendor
+                if filetype == 'file' and stat.S_ISREG(filemode):
+                    return vendor
+                # Less common types
+                if filetype == 'char' and stat.S_ISCHR(filemode):
+                    return vendor
+                if filetype == 'fifo' and stat.S_ISFIFO(filemode):
+                    return vendor
+                if filetype == 'link' and stat.S_ISLNK(filemode):
+                    return vendor
+                if filetype == 'sock' and stat.S_ISSOCK(filemode):
+                    return vendor
+
+        # It's not a repository (that we know of)
+        return None
 
 
 class File(Path):
     Corrupt = CorruptionError
 
-    def __init__(self, path):
-        super(File, self).__init__(path)
+    def __init__(self, path, parent):
+        super(File, self).__init__(path, parent=parent)
 
         self.handle = None
 
@@ -132,12 +251,17 @@ class File(Path):
             self.readable = True
 
     def __repr__(self):
-        return '<%s %s mimetype=%s fs-type=%s>' % (self.__class__.__name__,
-            self.path, self.mimetype, self.mount.fs['type'])
+        return '<%s %s mime-type=%s fs-type=%s repository-type=%s>' % (
+            self.__class__.__name__,
+            self.path,
+            self.mimetype or 'unknown',
+            self.mount.fs['type'],
+            self.repository.type
+        )
 
     # Method that does archive detection
-    def maybe(path, deflate_if_archive=True, deflate_limit=0, mount_hint=None):
-        instance = File(path)
+    def maybe(path, deflate_if_archive=True, deflate_limit=0, mount_hint=None, parent=None):
+        instance = File(path, parent=parent)
         if deflate_if_archive and instance.mimetype in Archive.supported_mimetypes:
             if deflate_limit > 0 and instance.size > deflate_limit:
                 logging.warning('skipped archive %s: too big (%s > %s)' % \
@@ -145,7 +269,7 @@ class File(Path):
                 return instance
 
             try:
-                instance = Archive(instance, mount_hint)
+                instance = Archive(instance, mount_hint, parent=parent)
                 logging.debug('opened archive %s: %s' % (instance,
                     instance.mimetype))
             except CorruptionError, e:
@@ -197,7 +321,7 @@ class File(Path):
         if not hasattr(self, '_mimetype'):
             try:
                 self._mimetype = magic.from_file(self.path, mime=True)
-            except:
+            except NameError:
                 self._mimetype = None
         return self._mimetype
 
@@ -220,6 +344,13 @@ class File(Path):
         return self.stat()[stat.ST_MTIME]
 
     mtime = property(mtime_get)
+
+    def repository_get(self):
+        if not hasattr(self, '_repository'):
+            self._repository = Repository(self.path)
+        return self._repository
+
+    repository = property(repository_get)
 
     def size_get(self):
         return self.stat()[stat.ST_SIZE]
@@ -249,8 +380,8 @@ class Archive(File):
         'application/zip',
     ]
 
-    def __init__(self, path, mount_hint=None):
-        super(Archive, self).__init__(path)
+    def __init__(self, path, mount_hint=None, parent=None):
+        super(Archive, self).__init__(path, parent=parent)
 
         # Flags used by recursor
         self.walkable = True
@@ -345,7 +476,7 @@ class Archive(File):
 
 class ArchiveFile(File):
     def __init__(self, path, archive):
-        super(ArchiveFile, self).__init__(path)
+        super(ArchiveFile, self).__init__(path, parent=archive)
 
         # Archive that contains this file
         self.archive = archive

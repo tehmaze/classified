@@ -13,39 +13,33 @@ allocated in accordance with ISO/IEC 7812.
 Configuration
 -------------
 
-``ignore``
-  List of hexadecimal characters that are ignored in between sequences of
-  potential PAN characters. You may chose to ignore characters such as NULL,
-  space or other whitespace characters.
+.. envvar:: probe.pan.ignore
 
-``format``
-  Default reporting format, see `format options`_.
+List of hexadecimal characters that are ignored in between sequences of
+potential PAN characters. You may chose to ignore characters such as NULL,
+space or other whitespace characters.
 
-``limit``
-  The maximum number of findings reported per file. Set to 0 to disable the
-  limit.
+.. envvar:: probe.pan.format
 
+Default reporting format. Available format options:
 
-Format options
---------------
+======================= =======================================================
+Option                  Description
+======================= =======================================================
+``card_number``         The full credit card number.
+``card_number_masked``  The masked credit card number, suitable for printing in
+                        reports.
+``company``             Company that issued the credit card number.
+``filename``            Full path to the file.
+``filename_relative``   Path to the file relative to the current working
+                        directory.
+``line``                Line number of find.
+======================= =======================================================
 
-``card_number``
-  The full credit card number.
+.. envvar:: probe.pan.limit
 
-``card_number_masked``
-  The masked credit card number, suitable for printing in reports.
-
-``company``
-  Company that issued the credit card number.
-
-``filename``
-  Full path to the file.
-
-``filename_relative``
-  Path to the file relative to the current working directory.
-
-``line``
-  Line number of find.
+The maximum number of findings reported per file. Set to 0 to disable the
+limit.
 
 
 Reference documents

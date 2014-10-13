@@ -43,6 +43,9 @@ exclude_type  = application/x-rpm
                 application/x-executable
                 application/x-not-regular-file
 
+; Excluded repository types
+;exclude_repo  = git:/tmp/*
+
 mindepth      = -1
 maxdepth      = -1
 
@@ -71,6 +74,14 @@ database      = %(db_path)s/incremental.db
 algorithm     = sha1
 
 
+; Filter configuration
+; --------------------
+
+[filter]
+; Path of the dbm file
+database      = %(db_path)s/filter.db
+
+
 ; Probe definitions
 ; -----------------
 ; This section maps mime type globs to possible probes.
@@ -79,7 +90,6 @@ algorithm     = sha1
 application/octet-stream        = pcap
 application/vnd.tcpdump.pcap    = pcap
 text/*                          = ssl, pan, password
-
 
 ; Probe configurations
 ; --------------------
@@ -90,7 +100,7 @@ text/*                          = ssl, pan, password
 ignore      = 0x00, 0x20, 0x2d
 
 ; Formatting if a result is found
-format      = {filename_relative}[{line:d}]: {company} {card_number_masked}
+format      = {filename_relative}[{line:d}]: {company} {card_number}
 
 ; Limit results (0 = disabled)
 limit       = 5
@@ -99,7 +109,7 @@ limit       = 5
 [probe:password]
 ; Regular expression pattern to look for passwords. The expression must contain
 ; at least the `password` match group.
-pattern     = \bpass(?:|wd|word)\b[\s\t=:]+(?P<password>\S{4,})\s*(?:['"]|$)"'])
+pattern     = \bpass(?:|wd|word)[ \s\t=:]+(?P<password>\S+)\s*(?:['"]|$)
 
 
 [probe:pcap]
@@ -109,26 +119,20 @@ format      = {filename_relative}[{line:d}]: pcap v{version} ({linktype})
 [probe:ssl]
 format      = {filename_relative}[{line:d}]: {username}({uid}:{gid}) {key_info} {key_type}
 
-; Report configurations
-; ---------------------
+[report:html]
+template        = report/full.html
 
 [report:mail]
 template        = report/full.eml
 server          = localhost
-sender          = {user}@{hostname}
-subject         = Classified report for {hostname}
-
-[report:html]
-template        = report/full.html
+sender          = security.team@booking.com
 
 [report:syslog]
 syslog_facility = daemon
-format_password = detected password in {filename}[{line:d}] {uid}:{gid} {type} {text_masked}
-format_pan      = detected pan in {filename}[{line:d}] {uid}:{gid} {company} {card_number_masked}
-format_pcap     = detected pcap in {filename} {uid}:{gid} {version} {linktype}
-format_ssl      = detected key in {filename} {uid}:{gid} {key_type} {key_info}
-
-
+format_password = password; {filename}; {username}; {type} {text_masked}
+format_pan      = pan; {filename}; {username}; {company} {card_number}
+format_pcap     = pcap; {filename}; {username}; {version} {linktype}
+format_ssl      = key; {filename}; {username}; {key_type} {key_info}
 
 ; Clean false positives
 ; ---------------------
@@ -156,10 +160,6 @@ context     = line
 [clean:pan]
 algorithm   = sha1
 context     = line
-ignore_hash = 00000000  # Test hash
-              12345678  # Test hash
-              affe094e  # Found in testdata/pan.txt
-              ffffffff  # Test hash
 ignore_hash = # The following SHA1 checksums appear in the (Debian)
               # openssh-blacklist package and are false positives
               25aafa4ee3132e56cc546bea0978408adcf93e4b  # blacklist.RSA-4096

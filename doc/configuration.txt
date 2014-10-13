@@ -1,0 +1,54 @@
+Configuration
+=============
+
+The configuration uses INI-style syntax. The configuration sections and options
+are case sensitive.
+
+Configuration option types
+--------------------------
+
+.. option:: string
+
+String options can be bare words, single or double quoted strings.
+
+.. option:: numeric
+
+Numeric options ca be long intergers or floating point numbers.
+
+.. option:: boolean
+
+Boolean options can be specified as follows.
+
+Valid ``true`` values are:
+ * ``true``
+ * ``yes``
+ * ``on``
+ * ``1``
+
+Valid ``false`` values are:
+ * ``false``
+ * ``no``
+ * ``off``
+ * ``0``
+
+Default section
+---------------
+
+The global configuration is defined under the ``[DEFAULT]`` section.
+
+.. envvar:: DEFAULT.db_path
+
+Path where various database files can be stored. The value can be used in other
+sections if referenced by ``%(db_path)s``.
+
+
+Other sections
+--------------
+
+Other configuration sections have their own documentation:
+
+.. toctree::
+   :maxdepth: 2
+
+   configuration/scanner
+   configuration/probe

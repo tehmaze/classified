@@ -44,9 +44,8 @@ Table Of Contents
    :maxdepth: 3
 
    getting_started
-   probe/index
    report/index
-   scanner
+   configuration
 
 
 
