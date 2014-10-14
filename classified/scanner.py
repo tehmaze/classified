@@ -60,6 +60,16 @@ class Scanner(object):
         except self.config.Error:
             pass
 
+        self.exclude_name = []
+        try:
+            self.exclude_name = self.config.getmulti('scanner', 'exclude_name')
+            self.exclude_name = map(
+                lambda pattern: re.compile(fnmatch.translate(pattern)),
+                self.exclude_name
+            )
+        except self.config.Error:
+            pass
+
         self.exclude_repo = {}
         try:
             for item in self.config.getmulti('scanner', 'exclude_repo'):
@@ -170,6 +180,12 @@ class Scanner(object):
                     max_depth=max_depth,
                     deflate=self.deflate,
                     deflate_limit=self.deflate_limit,
+                    checks=(
+                        self.test_exclude_fs,
+                        self.test_exclude_mimetype,
+                        self.test_exclude_name,
+                        self.test_exclude_repo,
+                    )
                 ):
                 if self.scan_item(item) is StopIteration:
                     break
@@ -184,29 +200,6 @@ class Scanner(object):
         # No readable file? Skip
         if not item.readable:
             logging.debug('skipping %s: no readable content' % item)
-            return
-
-        # No mime type? Skip
-        elif item.mimetype is None:
-            logging.debug('skipping %s: no mimetype' % item)
-            return
-
-        # Mime type exclusions
-        elif self.test_exclude_mimetype(item):
-            logging.debug('skipping %s: excluded %s mime type' % (item,
-                item.mimetype))
-            return
-
-        # File system type exclusions
-        elif self.test_exclude_fs(item):
-            logging.info('skipping %s: excluded %s filesystem' % (item,
-                item.mount.fs['type']))
-            return
-
-        # Repository exclusions
-        elif self.test_exclude_repo(item):
-            logging.debug('skipping %s: excluded %s repository' % (item,
-                item.repository.type))
             return
 
         elif self.incremental and item in self.incremental:
@@ -231,12 +224,31 @@ class Scanner(object):
             self.incremental.add(item)
 
     def test_exclude_fs(self, item):
-        return item.mount.fs['type'] in self.exclude_fs
+        '''Test if the file system type ``item`` is mounted on is excluded.'''
+        for test in self.exclude_fs:
+            if test.match(item.mount.fs['type']):
+                return True
+        return False
 
     def test_exclude_mimetype(self, item):
-        return item.mimetype in self.exclude_type
+        '''Test if the mimetype of ``item`` is excluded.'''
+        if item is None:
+            return True
+        else:
+            for test in self.exclude_type:
+                if test.match(item.mimetype):
+                    return True
+            return False
+
+    def test_exclude_name(self, item):
+        '''Test if the path of ``item`` is excluded.'''
+        for test in self.exclude_name:
+            if test.match(str(item)):
+                return True
+        return False
 
     def test_exclude_repo(self, item):
+        '''Test if ``item`` is an excluded repository type.'''
         if item.repository.type is not None:
             for repository_type in (item.repository.type, 'any'):
                 if repository_type in self.exclude_repo:

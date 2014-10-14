@@ -80,7 +80,8 @@ class Path(object):
         try:
             fileinfo = os.stat(path)
             filemode = fileinfo[stat.ST_MODE]
-        except (IOError, OSError):
+        except (IOError, OSError) as error:
+            logging.warning('%s stat() failed: %s' % (path, str(error)))
             return False
         else:
             return stat.S_ISDIR(filemode)
@@ -88,15 +89,20 @@ class Path(object):
     probe = classmethod(probe)
 
     def walk(self, recurse=True, depth=0, max_depth=10,
-             deflate=True, deflate_limit=0):
+             deflate=True, deflate_limit=0, checks=()):
 
         logging.debug('%s depth %d/%d' % (self.path, depth, max_depth))
 
+        if self.walk_stop(self, checks):
+            logging.debug('%s excluded, stop walking' % (self.path,))
+            return
+
         for item in self.walk_tree(deflate, deflate_limit):
-            if item is None:
+            if self.walk_stop(item, checks):
                 continue
 
             else:
+                logging.info('yielding %s' % item.path)
                 yield item
 
                 if recurse and (max_depth and depth >= max_depth):
@@ -104,16 +110,34 @@ class Path(object):
                     continue
 
                 if recurse and item.walkable:
+                    logging.debug('%s recursing' % (item.path, ))
                     try:
-                        for sub in item.walk(depth=depth + 1, max_depth=max_depth):
+                        for sub in item.walk(
+                                depth=depth + 1,
+                                max_depth=max_depth,
+                                checks=checks,
+                            ):
                             yield sub
                     except (IOError, OSError), error:
-                        logging.error('%s error %s' % (self.path, str(error)))
+                        logging.error('%s walk() failed: %s' % (self.path, str(error)))
+
+    def walk_stop(self, item, callbacks):
+        if item is None:
+            return True
+
+        for callback in callbacks:
+            if callback(item):
+                logging.debug('%s excluded via %s' % (item, callback.__name__))
+                return True
+
+        logging.debug('%s not excluded' % (item,))
+        return False
 
     def walk_tree(self, deflate, deflate_limit):
         if os.access(self.path, os.R_OK):
             for item in os.listdir(self.path):
                 full = os.path.join(self.path, item)
+                logging.info('full %s' % full)
                 if Path.probe(full):
                     yield Path(full, parent=self)
                 else:
@@ -127,6 +151,48 @@ class Path(object):
                     )
         else:
             logging.error('%s not accessible, skipping' % (self.path,))
+
+    # Dynamic properties
+
+    def mimetype_get(self):
+        if not hasattr(self, '_mimetype'):
+            try:
+                self._mimetype = magic.from_file(self.path, mime=True)
+            except NameError:
+                self._mimetype = None
+        return self._mimetype
+
+    def mimetype_set(self, mimetype):
+        self._mimetype = mimetype
+
+    mimetype = property(mimetype_get, mimetype_set)
+
+    def mount_get(self):
+        if not hasattr(self, '_mount'):
+            self._mount = Mount(self.path)
+        return self._mount
+
+    def mount_set(self, mount):
+        self._mount = mount
+
+    mount = property(mount_get, mount_set)
+
+    def mtime_get(self):
+        return self.stat()[stat.ST_MTIME]
+
+    mtime = property(mtime_get)
+
+    def repository_get(self):
+        if not hasattr(self, '_repository'):
+            self._repository = Repository(self.path)
+        return self._repository
+
+    repository = property(repository_get)
+
+    def size_get(self):
+        return self.stat()[stat.ST_SIZE]
+
+    size = property(size_get)
 
 
 class Repository(Path):
@@ -315,48 +381,6 @@ class File(Path):
     def readlines(self):
         return self.handle.readlines()
 
-    # Dynamic properties
-
-    def mimetype_get(self):
-        if not hasattr(self, '_mimetype'):
-            try:
-                self._mimetype = magic.from_file(self.path, mime=True)
-            except NameError:
-                self._mimetype = None
-        return self._mimetype
-
-    def mimetype_set(self, mimetype):
-        self._mimetype = mimetype
-
-    mimetype = property(mimetype_get, mimetype_set)
-
-    def mount_get(self):
-        if not hasattr(self, '_mount'):
-            self._mount = Mount(self.path)
-        return self._mount
-
-    def mount_set(self, mount):
-        self._mount = mount
-
-    mount = property(mount_get, mount_set)
-
-    def mtime_get(self):
-        return self.stat()[stat.ST_MTIME]
-
-    mtime = property(mtime_get)
-
-    def repository_get(self):
-        if not hasattr(self, '_repository'):
-            self._repository = Repository(self.path)
-        return self._repository
-
-    repository = property(repository_get)
-
-    def size_get(self):
-        return self.stat()[stat.ST_SIZE]
-
-    size = property(size_get)
-
 
 class Mount(Path):
     def __init__(self, path):
@@ -468,10 +492,17 @@ class Archive(File):
             except KeyError:  # File not in archive
                 pass
 
-    def walk(self, depth=0, max_depth=10):
+    def walk(self, depth=0, max_depth=10, checks=()):
         if self.walkable and (not max_depth or depth < max_depth):
             for item in self.recursor(depth=depth+1, max_depth=max_depth):
-                yield item
+                if item is None:
+                    continue
+
+                elif self.walk_stop(item, checks):
+                    continue
+
+                else:
+                    yield item
 
 
 class ArchiveFile(File):
