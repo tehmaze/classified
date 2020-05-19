@@ -1,5 +1,4 @@
 *.bak
-*.conf
 *.pyc
 *.pyo
 *.swp
