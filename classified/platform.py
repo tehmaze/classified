@@ -14,14 +14,7 @@ def get_filesystem(path, filesystems=None):
     '''
     path = os.path.abspath(path)
     if filesystems is None:
-        if sys.platform.startswith('linux'):
-            filesystems = mounts_linux()
-        elif sys.platform in ('darwin', 'freebsd', 'openbsd', 'netbsd'):
-            filesystems = mounts_bsd()
-        elif sys.platform.startswith('win'):
-            filesystems = mounts_windows()
-        else:
-            filesystems = []
+        filesystems = get_filesystems()
 
     filesystems_match = []
     for filesystem in filesystems:
@@ -36,7 +29,20 @@ def get_filesystem(path, filesystems=None):
     return filesystems_match[0]
 
 
-def mounts_linux():
+def get_filesystems():
+    '''List mounted file systems.'''
+    if sys.platform.startswith('linux'):
+        filesystems = _get_filesystems_linux()
+    elif sys.platform in ('darwin', 'freebsd', 'openbsd', 'netbsd'):
+        filesystems = _get_filesystems_bsd()
+    elif sys.platform.startswith('win'):
+        filesystems = _get_filesystems_windows()
+    else:
+        filesystems = []
+    return filesystems
+
+
+def _get_filesystems_linux():
     '''List mounted file systems on Linux.'''
     with open('/etc/mtab', 'r') as handle:
         for line in handle:
@@ -51,7 +57,7 @@ def mounts_linux():
             }
 
 
-def mounts_bsd():
+def _get_filesystems_bsd():
     '''List mounted file systems on BSD.'''
     mount = subprocess.run('mount', capture_output=True, check=True)
     for line in mount.stdout.splitlines():
@@ -65,7 +71,7 @@ def mounts_bsd():
         }
 
 
-def mounts_windows():
+def _get_filesystems_windows():
     '''List mounted drives on Window.'''
     wmi_service = win32com.client.Dispatch('WbemScripting.SWbemLocator')
     services = wmi_service.ConnectServer('.', "root\\cimv2")
@@ -77,5 +83,11 @@ def mounts_windows():
         }
 
 if __name__ == '__main__':
-    print(get_filesystem('/'))
+    filesystems = list(get_filesystems())
+    print('{} file systems mounted:'.format(len(filesystems)))
+    for filesystem in filesystems:
+        print('  {device} on {mount}'.format(**filesystem))
+
+    print('filesystem of /:')
+    print('  ', get_filesystem('/'))
 
