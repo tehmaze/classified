@@ -1,5 +1,5 @@
 # Python imports
-from ConfigParser import ConfigParser, Error, NoOptionError, NoSectionError
+from configparser import ConfigParser, Error, NoOptionError, NoSectionError
 import os
 import re
 
@@ -27,7 +27,7 @@ class Config(ConfigParser):
 
     def getlist(self, section, option, sep=','):
         value = self.get(section, option)
-        return map(lambda item: item.strip(), value.split(sep))
+        return [item.strip() for item in value.split(sep)]
 
     def getmulti(self, section, option, strip_comments=True):
         multi = []

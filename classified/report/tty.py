@@ -16,4 +16,4 @@ class TTYReport(HTMLReport):
         self.entries['time']['finish'] = datetime.datetime.now()
 
         # Compile MIME message
-        print self.template.render(**self.entries)
+        print(self.template.render(**self.entries))

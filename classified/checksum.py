@@ -5,9 +5,9 @@ from zlib import adler32, crc32
 
 
 class Adler32(object):
-    block_size = 64L
-    digestsize = 4L
-    digest_size = 4L
+    block_size = 64
+    digestsize = 4
+    digest_size = 4
     name = 'adler32'
 
     def __init__(self, string=''):
@@ -24,9 +24,9 @@ class Adler32(object):
 
 
 class CRC32(object):
-    block_size = 64L
-    digestsize = 4L
-    digest_size = 4L
+    block_size = 64
+    digestsize = 4
+    digest_size = 4
     name = 'crc32'
 
     def __init__(self, string=''):

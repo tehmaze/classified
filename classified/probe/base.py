@@ -23,8 +23,7 @@ class ProbeTracker(type):
         return new
 
 
-class Probe(object):
-    __metaclass__ = ProbeTracker
+class Probe(object, metaclass=ProbeTracker):
     default_buffer = sys.stdout
     target = ()                     # default list of target mime types
     format = None                   # default format string for reporting
@@ -61,10 +60,7 @@ class Probe(object):
             try:
                 ignore_name = self.config.getmulti('clean:%s' % self.name,
                     'ignore_name')
-                IGNORE[self.name]['name'] = map(
-                    lambda pattern: re.compile(fnmatch.translate(pattern)),
-                    ignore_name
-                )
+                IGNORE[self.name]['name'] = [re.compile(fnmatch.translate(pattern)) for pattern in ignore_name]
             except (self.config.NoOptionError, self.config.NoSectionError):
                 IGNORE[self.name]['name'] = []
 

@@ -1,8 +1,8 @@
 # Python imports
 try:
-    import dbm
+    import dbm.ndbm
 except ImportError:
-    import anydbm as dbm
+    import dbm as dbm
 import logging
 
 # Project imports
@@ -29,7 +29,7 @@ class Incremental(object):
             self.blocksize = self.default_blocksize
 
         # Open the database in secure mode
-        self.db = dbm.open(self.database, 'c', 0600)
+        self.db = dbm.ndbm.open(self.database, 'c', 0o600)
 
         logging.info('only checking incremental changes')
         logging.debug('tracking incremental changes in %s' % self.database)

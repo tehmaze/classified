@@ -9,7 +9,7 @@ class FileReport(SyslogReport):
 
     def setup(self):
         if not self.option.output:
-            print >>sys.stderr, 'Please supply an output file with --output'
+            print('Please supply an output file with --output', file=sys.stderr)
             sys.exit(1)
 
         # Setup logger environment

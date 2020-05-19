@@ -50,12 +50,21 @@ static PyObject *get_filesystems(PyObject *self, PyObject *args) {
         mntsize = getfsstat(mntbuf, bufsize, MNT_NOWAIT);
         for (n = 0; n < mntsize; ++n) {
             mountpoint = (PyObject *) PyDict_New();
+#if PY_MAJOR_VERSION >= 3
+            PyDict_SetItemString(mountpoint, "device",
+                PyUnicode_FromString(mntbuf[n].f_mntfromname));
+            PyDict_SetItemString(mountpoint, "mount",
+                PyUnicode_FromString(mntbuf[n].f_mntonname));
+            PyDict_SetItemString(mountpoint, "type",
+                PyUnicode_FromString(mntbuf[n].f_fstypename));
+#else
             PyDict_SetItemString(mountpoint, "device",
                 PyString_FromString(mntbuf[n].f_mntfromname));
             PyDict_SetItemString(mountpoint, "mount",
                 PyString_FromString(mntbuf[n].f_mntonname));
             PyDict_SetItemString(mountpoint, "type",
                 PyString_FromString(mntbuf[n].f_fstypename));
+#endif
             PyTuple_SetItem(result, n, mountpoint);
             Py_INCREF(mountpoint);
         }
@@ -100,13 +109,21 @@ static PyObject *get_filesystems(PyObject *self, PyObject *args) {
             if ((mnt.mnt_dir != NULL) && (statfs(mnt.mnt_dir, &fs) == 0)) {
                 mountpoint = (PyObject *) PyDict_New();
                 //assert(PyDict_Check(mountpoint));
-
+#if PY_MAJOR_VERSION >= 3
+                PyDict_SetItem(mountpoint, "device",
+                    PyUnicode_FromString(mnt.mnt_fsname));
+                PyDict_SetItem(mountpoint, "mount",
+                    PyUnicode_FromString(mnt.mnt_dir));
+                PyDict_SetItem(mountpoint, "type",
+                    PyUnicode_FromString(mnt.mnt_type));
+#else
                 PyDict_SetItemString(mountpoint, "device",
                     PyString_FromString(mnt.mnt_fsname));
                 PyDict_SetItemString(mountpoint, "mount",
                     PyString_FromString(mnt.mnt_dir));
                 PyDict_SetItemString(mountpoint, "type",
                     PyString_FromString(mnt.mnt_type));
+#endif
                 PyTuple_SetItem(result, n++, mountpoint);
                 Py_INCREF(mountpoint);
             }
@@ -129,6 +146,33 @@ static PyMethodDef module_methods[] = {
     {NULL, NULL, 0, NULL}
 };
 
+#if PY_MAJOR_VERSION >= 3
+static struct PyModuleDef moduledef = {
+    PyModuleDef_HEAD_INIT,
+    "_platform",         /* m_name */
+    module_docstring,    /* m_doc */
+    -1,                  /* m_size */
+    module_methods,      /* m_methods */
+    NULL,                /* m_reload */
+    NULL,                /* m_traverse */
+    NULL,                /* m_clear */
+    NULL,                /* m_free */
+};
+
+PyMODINIT_FUNC PyInit_platform(void)
+{
+    PyObject *m = PyModule_Create(&moduledef);
+    if (m == NULL)
+        return NULL;
+
+    PyObject *d = PyModule_GetDict(m);
+    if (d == NULL)
+        return NULL;
+
+    return m;
+}
+
+#else
 PyMODINIT_FUNC init_platform(void)
 {
     PyObject *m = Py_InitModule3("_platform", module_methods, module_docstring);
@@ -140,3 +184,4 @@ PyMODINIT_FUNC init_platform(void)
         return;
 }
 
+#endif

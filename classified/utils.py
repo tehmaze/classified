@@ -11,4 +11,4 @@ def leaders(iterable, top=10):
     for item in iterable:
         counters[item] += 1
 
-    return sorted(counters.items(), reverse=True, key=lambda tup: tup[1])[:top]
+    return sorted(list(counters.items()), reverse=True, key=lambda tup: tup[1])[:top]

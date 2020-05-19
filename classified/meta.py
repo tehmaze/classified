@@ -107,7 +107,7 @@ class Path(object):
                     try:
                         for sub in item.walk(depth=depth + 1, max_depth=max_depth):
                             yield sub
-                    except (IOError, OSError), error:
+                    except (IOError, OSError) as error:
                         logging.error('%s error %s' % (self.path, str(error)))
 
     def walk_tree(self, deflate, deflate_limit):
@@ -203,7 +203,7 @@ class Repository(Path):
                 return repository_type
 
     def _detect_type_path(self, path):
-        for vendor, probes in self.supported_types.iteritems():
+        for vendor, probes in self.supported_types.items():
             for filetype, filename in probes:
                 filepath = os.path.join(path, filename)
                 try:
@@ -272,7 +272,7 @@ class File(Path):
                 instance = Archive(instance, mount_hint, parent=parent)
                 logging.debug('opened archive %s: %s' % (instance,
                     instance.mimetype))
-            except CorruptionError, e:
+            except CorruptionError as e:
                 logging.warn('failed to inspect archive %s: %s' % (instance,
                     e))
 
@@ -509,21 +509,21 @@ class ArchiveFile(File):
             try:
                 self.handle = bz2.BZ2File(self.archive.path, mode=mode)
                 return self.handle
-            except IOError, e:
+            except IOError as e:
                 raise Archive.Corrupt(self.path)
 
         elif isinstance(self.archive.handle, gzip.GzipFile):
             try:
                 self.handle = gzip.GzipFile(self.archive.path, mode=mode)
                 return self.handle
-            except IOError, e:
+            except IOError as e:
                 raise Archive.Corrupt(self.path)
 
         elif lzma and isinstance(self.archive.handle, lzma.LZMAFile):
             try:
                 self.handle = lzma.LZMAFile(self.archive.path, mode=mode)
                 return self.handle
-            except lzma.LZMAError, e:
+            except lzma.LZMAError as e:
                 raise Archive.Corrupt(self.path)
 
         elif rarfile and isinstance(self.archive.handle, rarfile.RarFile):
@@ -531,14 +531,14 @@ class ArchiveFile(File):
             try:
                 self.handle = self.archive.handle.open(self.filename, mode)
                 return self.handle
-            except rarfile.Error, e:
+            except rarfile.Error as e:
                 logging.warning(str(e))
                 raise Archive.Corrupt(self.path)
             except OSError:
                 logging.error('failed to open rar archive, did you install '
                               'the unrar binary?')
                 raise Archive.Corrupt(self.path)
-            except TypeError, e:
+            except TypeError as e:
                 logging.error('failed to open rar archive, file corrupt? %s'
                               % str(e))
                 raise Archive.Corrupt(self.path)
@@ -548,7 +548,7 @@ class ArchiveFile(File):
                 self.handle = tarfile.TarFile.fileobject(self.archive.handle,
                     self.member)
                 return self.handle
-            except tarfile.TarError, e:
+            except tarfile.TarError as e:
                 logging.info(str(e))
                 raise Archive.Corrupt(self.path)
 
@@ -557,10 +557,10 @@ class ArchiveFile(File):
                 mode = mode.replace('b', '')  # not supported in zip files
                 self.handle = self.archive.handle.open(self.filename, mode)
                 return self.handle
-            except zipfile.BadZipfile, e:
+            except zipfile.BadZipfile as e:
                 logging.warning(str(e))
                 raise Archive.Corrupt(self.path)
-            except RuntimeError, e:
+            except RuntimeError as e:
                 error = str(e)
                 if 'password required' in error:
                     logging.info(error)
@@ -651,4 +651,4 @@ if rarfile is not None:
 
 if __name__ == '__main__':
     path = File(os.path.expanduser('~'))
-    print repr(path)
+    print(repr(path))

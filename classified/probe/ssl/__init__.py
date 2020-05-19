@@ -22,7 +22,7 @@ class SSL(Probe):
             while line == '':
                 try:
                     data = item.readline()
-                except Exception, e:
+                except Exception as e:
                     break
 
                 line = data.strip()
@@ -51,7 +51,7 @@ class SSL(Probe):
             while line == '':
                 try:
                     data = item.readline()
-                except Exception, e:
+                except Exception as e:
                     return
                 line = data.strip()
 
