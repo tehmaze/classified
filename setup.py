@@ -2,17 +2,6 @@ from distutils.core import setup, Extension
 import sys
 
 
-ext_modules = [
-    Extension('classified._platform',
-        ['src/classified._platform.c'],
-        extra_compile_args=[
-            '-DPLATFORM_%s' % (sys.platform.upper()),
-            '-Wunused',
-        ]
-    )
-]
-
-
 setup(
     name         = 'classified',
     version      = '1.4.0',
@@ -37,6 +26,5 @@ setup(
         ('/etc/classified', ['etc/classified.conf.example']),
     ],
     scripts      = ['bin/classified'],
-    ext_modules  = ext_modules,
 )
 
