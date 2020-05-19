@@ -29,7 +29,7 @@ class Probe(object, metaclass=ProbeTracker):
     format = None                   # default format string for reporting
     name = None
 
-    def __init__(self, config, report):
+    def __init__(self, config, report, buffer=None):
         self.config = config
         self.report = report
         self.name = self.name or self.__class__.__name__.lower()
@@ -112,7 +112,10 @@ class Probe(object, metaclass=ProbeTracker):
 
         elif context == 'line':
             try:
-                hashing.update(kwargs['raw'])
+                if isinstance(kwargs['raw'], str):
+                    hashing.update(kwargs['raw'].encode('utf-8'))
+                else:
+                    hashing.update(kwargs['raw'])
             except KeyError:
                 # The reported item has no "raw" format, therefor we can not
                 # provide a line-based hash
@@ -187,3 +190,9 @@ class Probe(object, metaclass=ProbeTracker):
 
         # Send findings to reporting engine
         self.report.report(self, item, **kwargs)
+
+
+def isdigit(x):
+    if isinstance(x, str):
+        return x.isdigit()
+    return ord('0') <= x and x <= ord('9')

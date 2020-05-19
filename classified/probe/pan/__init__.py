@@ -5,7 +5,7 @@ import logging
 import re
 
 # Project imports
-from classified.probe.base import Probe
+from classified.probe.base import Probe, isdigit
 
 
 decimal_decoder = lambda s: int(s, 10)
@@ -204,7 +204,7 @@ class PAN(Probe):
 
             for char in text:
                 # If we have a digit, append it to the digits list
-                if char.isdigit():
+                if isdigit(char):
                     digits.append(int(char))
 
                     if len(digits) >= digits_max:

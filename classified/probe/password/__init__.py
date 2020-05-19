@@ -19,6 +19,8 @@ class Password(Probe):
             pattern = self.config.get('probe:password', 'pattern')
         except self.config.NoOptionError:
             pattern = self.default_pattern
+        if isinstance(pattern, bytes):
+            pattern = pattern.decode('ascii')
         self.re_password = re.compile(pattern)
 
     def probe(self, item):
@@ -33,6 +35,8 @@ class Password(Probe):
             # Scan for passwords heuristically in any case            
             line = 0
             for text in item:
+                if isinstance(text, bytes):
+                    text = text.decode('utf-8')
                 line += 1
                 for password in self.re_password.findall(text):
                     if password == '':

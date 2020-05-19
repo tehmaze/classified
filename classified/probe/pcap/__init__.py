@@ -86,7 +86,7 @@ class PCAP(Probe):
     }
 
     def probe(self, item):
-        item.open('r')
+        item.open('rb')
         chunk = item.read(self.header_size)
         if len(chunk) != self.header_size:
             return
