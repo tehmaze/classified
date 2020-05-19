@@ -5,7 +5,7 @@ import os
 import re
 import datetime
 import traceback
-import StringIO
+import io
 
 # Project imports
 from classified.incremental import Incremental
@@ -37,10 +37,7 @@ class Scanner(object):
         self.exclude_fs = []
         try:
             self.exclude_fs = self.config.getmulti('scanner', 'exclude_fs')
-            self.exclude_fs = map(
-                lambda pattern: re.compile(fnmatch.translate(pattern)),
-                self.exclude_fs
-            )
+            self.exclude_fs = [re.compile(fnmatch.translate(pattern)) for pattern in self.exclude_fs]
         except self.config.Error:
             pass
 
@@ -53,10 +50,7 @@ class Scanner(object):
         self.exclude_type = []
         try:
             self.exclude_type = self.config.getmulti('scanner', 'exclude_type')
-            self.exclude_type = map(
-                lambda pattern: re.compile(fnmatch.translate(pattern)),
-                self.exclude_type
-            )
+            self.exclude_type = [re.compile(fnmatch.translate(pattern)) for pattern in self.exclude_type]
         except self.config.Error:
             pass
 
@@ -132,7 +126,7 @@ class Scanner(object):
         for probe in probes:
             try:
                 modules[probe] = __import__('classified.probe.%s' % probe)
-            except ImportError, e:
+            except ImportError as e:
                 raise TypeError('Invalid probe %s enabled: %s' % (probe,
                     str(e)))
 
@@ -160,7 +154,7 @@ class Scanner(object):
                 probe.probe(item)
         except NotImplementedError:
             logging.warning('could not start probe %s: not implemented' % name)
-        except Exception, error:
+        except Exception as error:
             logging.error('probe %s on %r failed: %s' % (name, item, error))
 
     def scan(self, path, max_depth=10):
@@ -217,12 +211,12 @@ class Scanner(object):
             logging.debug('scanning %r' % item)
 
         success = True
-        for pattern, probes in self.probes.iteritems():
+        for pattern, probes in self.probes.items():
             if pattern.match(item.mimetype):
                 for probe in probes:
                     try:
                         self.probe(item, probe)
-                    except CorruptionError, e:
+                    except CorruptionError as e:
                         logging.error('probe %s on %s failed: %s' % (probe,
                             item, e))
                         success = False

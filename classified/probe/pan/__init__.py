@@ -5,7 +5,7 @@ import logging
 import re
 
 # Project imports
-from classified.probe.base import Probe
+from classified.probe.base import Probe, isdigit
 
 
 decimal_decoder = lambda s: int(s, 10)
@@ -14,9 +14,9 @@ decimal_encoder = lambda i: str(i)
 
 def luhn_sum_mod_base(string, base=10, decoder=decimal_decoder):
     # Adapted from http://en.wikipedia.org/wiki/Luhn_algorithm
-    digits = map(decoder, string)
+    digits = list(map(decoder, string))
     return (sum(digits[::-2]) +
-        sum(map(lambda d: sum(divmod(2*d, base)), digits[-2::-2]))) % base
+        sum([sum(divmod(2*d, base)) for d in digits[-2::-2]])) % base
 
 
 def generate(string, base=10, encoder=decimal_encoder,
@@ -139,11 +139,11 @@ class PAN(Probe):
             prefix = re.compile(r'^(?:3088|3096|3112|3158|3337|352[89]|35[3-7][0-9]|358[0-9])'),
         ),
         'Laser': dict(
-            length = range(12, 20),
+            length = list(range(12, 20)),
             prefix = re.compile(r'^(?:6304|6706|6771|6709)'),
         ),
         'Maestro': dict(
-            length = range(12, 20),
+            length = list(range(12, 20)),
             prefix = re.compile(r'^(?:5018|5020|5038|5893|6304|6759|676[1-3]|0604)'),
         ),
         'MasterCard': dict(
@@ -161,7 +161,7 @@ class PAN(Probe):
 
         # Also keep track of per prefix size checks
         self._check_size = {}
-        for company, checks in self._check.iteritems():
+        for company, checks in self._check.items():
             for length in checks['length']:
                 if length not in self._check_size:
                     self._check_size[length] = {}
@@ -169,10 +169,7 @@ class PAN(Probe):
 
         # Ignores, if configured
         if self.config.has_option('probe:pan', 'ignore'):
-            self.ignore = map(
-                lambda char: chr(int(char, 16)),
-                self.config.getlist('probe:pan', 'ignore')
-            )
+            self.ignore = [chr(int(char, 16)) for char in self.config.getlist('probe:pan', 'ignore')]
 
     def luhn_check(self, card_number):
         # Do the Luhn check
@@ -182,7 +179,7 @@ class PAN(Probe):
     def process_prefix(self, card_number):
         length = len(card_number)
         if length in self._check_size:
-            for company, prefix in self._check_size[length].iteritems():
+            for company, prefix in self._check_size[length].items():
                 if prefix.match(card_number):
                     return company
 
@@ -207,14 +204,14 @@ class PAN(Probe):
 
             for char in text:
                 # If we have a digit, append it to the digits list
-                if char.isdigit():
+                if isdigit(char):
                     digits.append(int(char))
 
                     if len(digits) >= digits_max:
                         digits = digits[1:]
 
                     if len(digits) >= digits_min:
-                        for x in xrange(digits_min, digits_max + 1):
+                        for x in range(digits_min, digits_max + 1):
                             card_number = ''.join(map(str, digits[:x]))
                             card_company = self.luhn_check(card_number)
                             if card_company is not None:

@@ -16,13 +16,13 @@ class SSL(Probe):
             key_info = ['plaintext']
             key_type = None
 
-            data = ''
-            line = ''
+            data = b''
+            line = b''
             lineno = 0
             while line == '':
                 try:
                     data = item.readline()
-                except Exception, e:
+                except Exception as e:
                     break
 
                 line = data.strip()
@@ -30,16 +30,16 @@ class SSL(Probe):
                 if data == '':  # EOF?
                     break
 
-            if '-----BEGIN RSA PRIVATE KEY-----' in line:
+            if b'-----BEGIN RSA PRIVATE KEY-----' in line:
                 key = 'RSA pri)ate key'
                 key_type = 'rsa'
-            elif 'SSH PRIVATE KEY FILE FORMAT 1' in line:
+            elif b'SSH PRIVATE KEY FILE FORMAT 1' in line:
                 key = 'RSA1 private key'
                 key_type = 'rsa1'
-            elif '-----BEGIN DSA PRIVATE KEY-----' in line:
+            elif b'-----BEGIN DSA PRIVATE KEY-----' in line:
                 key = 'DSA private key'
                 key_type = 'dsa'
-            elif '-----BEGIN EC PRIVATE KEY-----' in line:
+            elif b'-----BEGIN EC PRIVATE KEY-----' in line:
                 key = 'ECDSA private key'
                 key_type = 'ecdsa'
             else:
@@ -51,7 +51,7 @@ class SSL(Probe):
             while line == '':
                 try:
                     data = item.readline()
-                except Exception, e:
+                except Exception as e:
                     return
                 line = data.strip()
 

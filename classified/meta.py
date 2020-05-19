@@ -107,8 +107,10 @@ class Path(object):
                     try:
                         for sub in item.walk(depth=depth + 1, max_depth=max_depth):
                             yield sub
-                    except (IOError, OSError), error:
+                    except (IOError, OSError) as error:
                         logging.error('%s error %s' % (self.path, str(error)))
+                    except CorruptionError as error:
+                        logging.error('%s is corrupt' % (self.path,))
 
     def walk_tree(self, deflate, deflate_limit):
         if os.access(self.path, os.R_OK):
@@ -203,7 +205,7 @@ class Repository(Path):
                 return repository_type
 
     def _detect_type_path(self, path):
-        for vendor, probes in self.supported_types.iteritems():
+        for vendor, probes in self.supported_types.items():
             for filetype, filename in probes:
                 filepath = os.path.join(path, filename)
                 try:
@@ -269,10 +271,10 @@ class File(Path):
                 return instance
 
             try:
-                instance = Archive(instance, mount_hint, parent=parent)
+                instance = Archive(path, mount_hint, parent=parent)
                 logging.debug('opened archive %s: %s' % (instance,
                     instance.mimetype))
-            except CorruptionError, e:
+            except CorruptionError as e:
                 logging.warn('failed to inspect archive %s: %s' % (instance,
                     e))
 
@@ -321,6 +323,7 @@ class File(Path):
         if not hasattr(self, '_mimetype'):
             try:
                 self._mimetype = magic.from_file(self.path, mime=True)
+                self._mimetype = self._mimetype.decode('ascii')
             except NameError:
                 self._mimetype = None
         return self._mimetype
@@ -396,7 +399,10 @@ class Archive(File):
             self.bundle = tarfile.is_tarfile(self.path)
             if self.bundle:
                 self.recursor = self._recursor_tar
-                self.handle = tarfile.open(self.path)
+                try:
+                    self.handle = tarfile.open(self.path)
+                except tarfile.ReadError:
+                    raise Archive.Corrupt(self.path)
             else:
                 self.recursor = self._recursor_compressed
 
@@ -414,6 +420,7 @@ class Archive(File):
 
                 # Override mimetype by the mimetype of the compressed file
                 self.mimetype = magic.from_buffer(self.read(1024), mime=True)
+                self.mimetype = self.mimetype.decode('ascii')
 
         elif mimetype == 'x-rar' and rarfile is not None:
             try:
@@ -424,7 +431,10 @@ class Archive(File):
             self.recursor = self._recursor_rar
 
         elif mimetype == 'x-tar':
-            self.handle = tarfile.open(self.path)
+            try:
+                self.handle = tarfile.open(self.path)
+            except tarfile.ReadError:
+                raise Archive.Corrupt(self.path)
             self.recursor = self._recursor_tar
 
         elif mimetype == 'zip':
@@ -446,16 +456,19 @@ class Archive(File):
                 pass
 
     def _recursor_tar(self, depth, max_depth):
-        for item in self.handle.getmembers():
-            size = len(item.name.split(os.sep))
-            if (depth + size - 1) >= max_depth:
-                continue
-            full = os.path.join(self.path, item.name)
-            if item.type == tarfile.REGTYPE:
-                try:
-                    yield ArchiveFile(full, self)
-                except KeyError:  # File not in archive
-                    pass
+        try:
+            for item in self.handle.getmembers():
+                size = len(item.name.split(os.sep))
+                if (depth + size - 1) >= max_depth:
+                    continue
+                full = os.path.join(self.path, item.name)
+                if item.type == tarfile.REGTYPE:
+                    try:
+                        yield ArchiveFile(full, self)
+                    except KeyError:  # File not in archive
+                        pass
+        except tarfile.ReadError:
+            raise Archive.Corrupt(self.path)
 
     def _recursor_zip(self, depth, max_depth):
         for item in self.handle.infolist():
@@ -509,21 +522,21 @@ class ArchiveFile(File):
             try:
                 self.handle = bz2.BZ2File(self.archive.path, mode=mode)
                 return self.handle
-            except IOError, e:
+            except IOError as e:
                 raise Archive.Corrupt(self.path)
 
         elif isinstance(self.archive.handle, gzip.GzipFile):
             try:
                 self.handle = gzip.GzipFile(self.archive.path, mode=mode)
                 return self.handle
-            except IOError, e:
+            except IOError as e:
                 raise Archive.Corrupt(self.path)
 
         elif lzma and isinstance(self.archive.handle, lzma.LZMAFile):
             try:
                 self.handle = lzma.LZMAFile(self.archive.path, mode=mode)
                 return self.handle
-            except lzma.LZMAError, e:
+            except lzma.LZMAError as e:
                 raise Archive.Corrupt(self.path)
 
         elif rarfile and isinstance(self.archive.handle, rarfile.RarFile):
@@ -531,14 +544,14 @@ class ArchiveFile(File):
             try:
                 self.handle = self.archive.handle.open(self.filename, mode)
                 return self.handle
-            except rarfile.Error, e:
+            except rarfile.Error as e:
                 logging.warning(str(e))
                 raise Archive.Corrupt(self.path)
             except OSError:
                 logging.error('failed to open rar archive, did you install '
                               'the unrar binary?')
                 raise Archive.Corrupt(self.path)
-            except TypeError, e:
+            except TypeError as e:
                 logging.error('failed to open rar archive, file corrupt? %s'
                               % str(e))
                 raise Archive.Corrupt(self.path)
@@ -548,7 +561,7 @@ class ArchiveFile(File):
                 self.handle = tarfile.TarFile.fileobject(self.archive.handle,
                     self.member)
                 return self.handle
-            except tarfile.TarError, e:
+            except tarfile.TarError as e:
                 logging.info(str(e))
                 raise Archive.Corrupt(self.path)
 
@@ -557,10 +570,10 @@ class ArchiveFile(File):
                 mode = mode.replace('b', '')  # not supported in zip files
                 self.handle = self.archive.handle.open(self.filename, mode)
                 return self.handle
-            except zipfile.BadZipfile, e:
+            except zipfile.BadZipfile as e:
                 logging.warning(str(e))
                 raise Archive.Corrupt(self.path)
-            except RuntimeError, e:
+            except RuntimeError as e:
                 error = str(e)
                 if 'password required' in error:
                     logging.info(error)
@@ -636,6 +649,7 @@ class ArchiveFile(File):
                 self._mimetype = None
             else:
                 self._mimetype = magic.from_buffer(self.read(1024), mime=True)
+                self._mimetype = self._mimetype.decode('ascii')
         return self._mimetype
 
     mimetype = property(mimetype_get)
@@ -651,4 +665,4 @@ if rarfile is not None:
 
 if __name__ == '__main__':
     path = File(os.path.expanduser('~'))
-    print repr(path)
+    print(repr(path))

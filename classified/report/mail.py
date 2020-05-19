@@ -17,7 +17,7 @@ class MailReport(HTMLReport):
 
     def setup(self):
         if not self.option.output:
-            print >>sys.stderr, 'Please supply recipients with --output'
+            print('Please supply recipients with --output', file=sys.stderr)
             sys.exit(1)
 
         # Setup template environment
@@ -39,7 +39,7 @@ class MailReport(HTMLReport):
         message['To'] = self.option.output
         message['X-Mailer'] = 'classified/1.0'
 
-        print message.as_string()
+        print(message.as_string())
 
         # Send mail
         smtp = smtplib.SMTP(self.config.getdefault('report:mail',

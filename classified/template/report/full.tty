@@ -29,7 +29,7 @@ No files to report.
 ### Findings for probe {{ type }}
 {% for file, item in items -%}
   {% if type == 'pan' %}
-  {{ item.filename }}[{{ item.line }}] {{ item.username }} {{ item.company }} {{ item.card_number }}
+  {{ item.filename }}[{{ item.line }}] {{ item.username }} {{ item.company }} {{ item.card_number_masked }}
   {% elif type == 'password' %}
   {{ item.filename }}[{{ item.line }}] {{ item.username }} {{ item.type}} {{ item.password_masked }}
   {% elif type == 'pcap' %}

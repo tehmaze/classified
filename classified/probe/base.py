@@ -23,14 +23,13 @@ class ProbeTracker(type):
         return new
 
 
-class Probe(object):
-    __metaclass__ = ProbeTracker
+class Probe(object, metaclass=ProbeTracker):
     default_buffer = sys.stdout
     target = ()                     # default list of target mime types
     format = None                   # default format string for reporting
     name = None
 
-    def __init__(self, config, report):
+    def __init__(self, config, report, buffer=None):
         self.config = config
         self.report = report
         self.name = self.name or self.__class__.__name__.lower()
@@ -61,10 +60,7 @@ class Probe(object):
             try:
                 ignore_name = self.config.getmulti('clean:%s' % self.name,
                     'ignore_name')
-                IGNORE[self.name]['name'] = map(
-                    lambda pattern: re.compile(fnmatch.translate(pattern)),
-                    ignore_name
-                )
+                IGNORE[self.name]['name'] = [re.compile(fnmatch.translate(pattern)) for pattern in ignore_name]
             except (self.config.NoOptionError, self.config.NoSectionError):
                 IGNORE[self.name]['name'] = []
 
@@ -116,7 +112,10 @@ class Probe(object):
 
         elif context == 'line':
             try:
-                hashing.update(kwargs['raw'])
+                if isinstance(kwargs['raw'], str):
+                    hashing.update(kwargs['raw'].encode('utf-8'))
+                else:
+                    hashing.update(kwargs['raw'])
             except KeyError:
                 # The reported item has no "raw" format, therefor we can not
                 # provide a line-based hash
@@ -191,3 +190,9 @@ class Probe(object):
 
         # Send findings to reporting engine
         self.report.report(self, item, **kwargs)
+
+
+def isdigit(x):
+    if isinstance(x, str):
+        return x.isdigit()
+    return ord('0') <= x and x <= ord('9')

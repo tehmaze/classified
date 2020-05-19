@@ -1,21 +1,9 @@
-from distutils.core import setup, Extension
-import sys
-
-
-ext_modules = [
-    Extension('classified._platform',
-        ['src/classified._platform.c'],
-        extra_compile_args=[
-            '-DPLATFORM_%s' % (sys.platform.upper()),
-            '-Wunused',
-        ]
-    )
-]
+from distutils.core import setup
 
 
 setup(
     name         = 'classified',
-    version      = '1.3.0',
+    version      = '1.4.0',
     author       = 'Wijnand Modderman',
     author_email = 'maze@pyth0n.org',
     description  = 'Classified data scanner',
@@ -37,6 +25,4 @@ setup(
         ('/etc/classified', ['etc/classified.conf.example']),
     ],
     scripts      = ['bin/classified'],
-    ext_modules  = ext_modules,
 )
-

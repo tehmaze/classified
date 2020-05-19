@@ -12,9 +12,7 @@ class ReportTracker(type):
         return new
 
 
-class Report(object):
-    __metaclass__ = ReportTracker
-
+class Report(object, metaclass=ReportTracker):
     def __init__(self, config, option):
         self.config = config
         self.option = option
