@@ -1,5 +1,4 @@
-from distutils.core import setup, Extension
-import sys
+from distutils.core import setup
 
 
 setup(
@@ -27,4 +26,3 @@ setup(
     ],
     scripts      = ['bin/classified'],
 )
-
