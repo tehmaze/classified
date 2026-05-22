@@ -1,13 +1,13 @@
 build: .FORCE
-	python setup.py build
+	uv build
 
 doc: .FORCE
 	PYTHONPATH=. $(MAKE) -C doc html
 
-install: build .FORCE
-	python setup.py install
+install: .FORCE
+	uv sync
 
 test:
-	PYTHONPATH=. bin/classified -c testdata/classified.conf -v testdata/
+	uv run bin/classified -c testdata/classified.conf -v testdata/
 
 .FORCE:
