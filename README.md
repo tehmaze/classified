@@ -7,46 +7,28 @@ maintaining PCI DSS compliance.
 
 ## Requirements
 
-Classified is suitable for Python 3.5 - 3.8. Python 2.x is *no longer
-supported*.
+Classified requires Python 3.9 or later. Python 2.x is *no longer supported*.
 
-Required:
-*  [Python 3.5 - 3.8](http://python.org/)
-*  [python-magic](http://pypi.python.org/pypi/python-magic), for mime type
-   detection
+Required dependencies (installed automatically via `uv` or `pip`):
+*  [python-magic](https://pypi.org/project/python-magic/), for mime type detection
+*  [Jinja2](https://pypi.org/project/Jinja2/), for HTML report rendering
+*  [rarfile](https://pypi.org/project/rarfile/), to inspect RAR archives
 
-## Requirements (optional)
+## Installing
 
-Optionally, install:
-*  [backports.lzma](http://pypi.python.org/pypi/backports.lzma), to inspect
-   LZMA compressed files and archives
-*  [rarfile](http://pypi.python.org/pypi/rarfile), to inspect RAR archives
+Install [uv](https://docs.astral.sh/uv/) if you haven't already:
 
+    $ curl -LsSf https://astral.sh/uv/install.sh | sh
 
-## Installing (Debian, Ubuntu)
+Then install Classified:
 
-Install the required packages:
+    $ uv tool install git+https://github.com/tehmaze/classified.git
 
-    $ sudo apt-get install python-magic python-lzma
+Or clone and install in development mode:
 
-You can use [pip](http://www.pip-installer.org/) to install Classified:
-
-    $ sudo apt-get install python-pip python-all-dev
-    ...
-    $ sudo pip install -e \
-        git+https://github.com/tehmaze/classified.git#egg=classified
-
-
-## Installing (CentOS, Red Hat)
-
-For CentOS and Red Hat Enterprise Linux version 5, you will need to enable the
-[Extra Packages for Enterprise Linux](https://fedoraproject.org/wiki/EPEL) and
-install:
-*  python26
-*  python26-devel
-
-You need the following additional Python packages:
-*  [python-magic](http://pypi.python.org/pypi/python-magic)
+    $ git clone https://github.com/tehmaze/classified.git
+    $ cd classified
+    $ uv sync
 
 
 ## Usage
