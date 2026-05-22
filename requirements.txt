@@ -1,4 +1,0 @@
-python-magic
-rarfile
-backports.lzma
-Jinja2

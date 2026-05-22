@@ -1,0 +1,28 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "classified"
+version = "1.4.0"
+description = "Classified data scanner"
+license = { text = "MIT" }
+authors = [{ name = "Wijnand Modderman", email = "maze@pyth0n.org" }]
+keywords = ["classified", "sensitive", "pan", "pci"]
+requires-python = ">=3.9"
+dependencies = [
+    "python-magic",
+    "rarfile",
+    "Jinja2",
+]
+
+[project.scripts]
+classified = "classified.cli:run"
+
+[tool.hatch.build.targets.wheel]
+packages = [
+    "classified",
+]
+
+[tool.hatch.build.targets.wheel.shared-data]
+"etc/classified.conf.example" = "etc/classified/classified.conf.example"

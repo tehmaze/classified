@@ -1,0 +1,93 @@
+# Python imports
+import logging
+import os
+import optparse
+import sys
+
+# Project imports
+from classified.config import Config
+from classified.scanner import Scanner
+
+
+class Parser(optparse.OptionParser):
+    def format_epilog(self, formatter):
+        return '''
+Probes:
+  pan                   Personal Account Number data (credit card numbers)
+  password              Password data
+  pcap                  Packet Capture data (as captured by e.g. tcpdump)
+  ssl                   Cryptologic (unprotected) private keys
+
+Report formats:
+  html                  HTML report *
+  file                  Text report *
+  mail                  Text report suitable for e-mail **
+  tty                   Text report suitable for printing to STDOUT
+  syslog                Text report suitable for per-finding syslog messages
+
+  *                     Requires --output flag with file path
+  **                    Requires --output flag with recipient e-mail address(es)
+'''
+
+
+def run():
+    parser = Parser(usage='%prog <path[ .. <path>]>')
+    parser.add_option('-c', '--config', default='',
+        help='Configuration file')
+    parser.add_option('-d', '--max-depth', default=10, type='int',
+        help='Max recursion depth (default: %default)')
+    parser.add_option('-i', '--incremental', action='store_true', default=False,
+        help='Be incremental (default: no)')
+    parser.add_option('-p', '--probes', default='all',
+        help='Probes to enable, comma separated (default: %default)')
+
+    group = optparse.OptionGroup(parser, 'Reporting options')
+    group.add_option('-r', '--report', action='store_true', default=False,
+        help='Generate a report')
+    group.add_option('-R', '--report-format', default='syslog',
+        help='Report format (default: %default)')
+    group.add_option('-o', '--output', default='',
+        help='Output file for report')
+    parser.add_option_group(group)
+
+    group = optparse.OptionGroup(parser, 'Debug options')
+    group.add_option('-q', '--quiet', action='store_true', default=False,
+        help='Be quiet (default: no)')
+    group.add_option('-v', '--verbose', action='store_true', default=False,
+        help='Be verbose (default: no)')
+    parser.add_option_group(group)
+
+    option, args = parser.parse_args()
+    if not args:
+        return parser.error('need at least one path to work with')
+
+    if option.verbose and option.quiet:
+        return parser.error('--quiet and --verbose are mutually exclusive')
+
+    if option.quiet:
+        logging.basicConfig(level=logging.CRITICAL)
+    elif option.verbose:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.ERROR)
+
+    # If no reporting is enabled, print the results on stdout
+    if not option.report:
+        option.report = True
+        option.report_format = 'tty'
+
+    config = Config(option.config)
+    if option.incremental:
+        config.set('scanner', 'incremental', True)
+
+    scanner = Scanner(config, option)
+
+    for path in args:
+        scanner.scan(os.path.expanduser(path), max_depth=option.max_depth)
+
+    if option.report:
+        scanner.report.render()
+
+
+if __name__ == '__main__':
+    sys.exit(run())
