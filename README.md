@@ -31,6 +31,24 @@ Or clone and install in development mode:
     $ uv sync
 
 
+## Installing (CentOS Stream 9, RHEL 9/10, Oracle Linux 9/10)
+
+Install the `libmagic` system library required by `python-magic`:
+
+    $ sudo dnf install -y file-libs
+
+Then install `uv` and Classified:
+
+    $ curl -LsSf https://astral.sh/uv/install.sh | sh
+    $ uv tool install git+https://github.com/tehmaze/classified.git
+
+For RAR archive inspection, install `unrar` from the
+[RPM Fusion](https://rpmfusion.org/) repository (RHEL/CentOS/Oracle Linux):
+
+    $ sudo dnf install -y epel-release  # skip if already enabled
+    $ sudo dnf install -y unar
+
+
 ## Usage
 
 The [configuration file](etc/classified.conf.example) has extensive comments
