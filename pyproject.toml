@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "classified"
-version = "1.4.0"
+version = "1.4.1"
 description = "Classified data scanner"
 license = { text = "MIT" }
 authors = [{ name = "Wijnand Modderman", email = "maze@pyth0n.org" }]
